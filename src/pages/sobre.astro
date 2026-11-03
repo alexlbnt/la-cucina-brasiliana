@@ -1,0 +1,76 @@
+---
+import { Image } from 'astro:assets';
+import Base from '../layouts/Base.astro';
+import Separador from '../components/Separador.astro';
+import ilustracaoMesa from '../assets/ilustracao-mesa.png';
+---
+
+<Base titulo="Sobre" descricao="Sobre La cucina brasiliana, uma cozinha de hobby com base italiana.">
+  <article class="sobre pagina">
+    <header class="topo">
+      <p class="versalete rotulo">La cucina brasiliana</p>
+      <h1>Sobre</h1>
+      <Separador />
+    </header>
+
+    <figure class="ilustracao">
+      <Image
+        src={ilustracaoMesa}
+        alt="Desenho a pincel, em azul-marinho, de duas pessoas sentadas à mesa de um café, com copos sobre a mesa e cadeiras de ferro."
+        widths={[360, 560, 736]}
+        sizes="(min-width: 40rem) 560px, 100vw"
+      />
+    </figure>
+
+    <div class="texto">
+      <p>[TEXTO SOBRE MIM — vou escrever depois]</p>
+    </div>
+  </article>
+</Base>
+
+<style>
+  .sobre {
+    max-width: 44rem;
+  }
+
+  .topo {
+    display: grid;
+    justify-items: center;
+    gap: 0.75rem;
+    text-align: center;
+  }
+
+  h1 {
+    font-size: clamp(2.75rem, 2rem + 4vw, 4.5rem);
+    line-height: 1;
+  }
+
+  .ilustracao {
+    margin: clamp(2rem, 5vw, 3rem) auto;
+    max-width: 35rem;
+  }
+
+  .ilustracao :global(img) {
+    width: 100%;
+    height: auto;
+    /* O papel do desenho some no creme da página. */
+    mix-blend-mode: multiply;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    .ilustracao :global(img) {
+      mix-blend-mode: normal;
+      padding: 0.75rem;
+      background: var(--creme);
+    }
+  }
+
+  .texto {
+    max-width: var(--largura-texto);
+    margin-inline: auto;
+  }
+
+  .texto p + p {
+    margin-top: 1rem;
+  }
+</style>
