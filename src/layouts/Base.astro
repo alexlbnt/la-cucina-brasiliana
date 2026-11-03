@@ -33,13 +33,17 @@ const imagemOg = new URL('/og.png', Astro.site);
     <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
     <link rel="icon" href="/favicon.png" type="image/png" sizes="64x64" />
     <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
-    <meta name="theme-color" content="#F6F0E4" />
+    <meta name="theme-color" content="#F6F0E4" media="(prefers-color-scheme: light)" />
+    <meta name="theme-color" content="#1F2D4D" media="(prefers-color-scheme: dark)" />
     <script is:inline>
       // Aplica o tema escolhido antes da primeira pintura, sem piscar.
+      // Sem escolha salva, vale o tema do navegador.
       try {
-        if (localStorage.getItem('tema') === 'escuro') {
-          document.documentElement.dataset.tema = 'escuro';
-          document.querySelector('meta[name="theme-color"]')?.setAttribute('content', '#1F2D4D');
+        const tema = localStorage.getItem('tema');
+        if (tema === 'claro' || tema === 'escuro') {
+          document.documentElement.dataset.tema = tema;
+          const cor = tema === 'escuro' ? '#1F2D4D' : '#F6F0E4';
+          document.querySelectorAll('meta[name="theme-color"]').forEach((meta) => meta.setAttribute('content', cor));
         }
       } catch {}
     </script>

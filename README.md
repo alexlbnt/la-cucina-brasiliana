@@ -168,7 +168,7 @@ supabase/testes/           testes das regras de acesso, num Postgres em memória
 tests/                     testes da formatação de texto
 ```
 
-As cores ficam em variáveis no topo de `src/styles/global.css`. O tema segue a preferência do sistema de quem visita e pode ser trocado no botão do cabeçalho.
+As cores ficam em variáveis no topo de `src/styles/global.css`. O tema segue o modo claro ou escuro do navegador de quem visita; se a pessoa trocar no botão do cabeçalho, a escolha fica salva para as próximas visitas.
 
 O favicon e a imagem de compartilhamento (`public/favicon.svg`, `favicon.png`, `apple-touch-icon.png` e `og.png`) já estão prontos. Só é preciso rodar `npm run imagens` de novo se o desenho do selo mudar.
 
