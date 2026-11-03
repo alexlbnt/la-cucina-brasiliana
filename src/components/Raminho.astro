@@ -13,7 +13,7 @@ const { tamanho = 40, cor = 'var(--cor-rotulo)', titulo, class: classe } = Astro
 
 const largura = typeof tamanho === 'number' ? `${tamanho}px` : tamanho;
 const acessivel = titulo
-  ? { role: 'img', 'aria-label': titulo }
+  ? { role: 'img' as const, 'aria-label': titulo }
   : { 'aria-hidden': 'true' as const, focusable: 'false' };
 ---
 
