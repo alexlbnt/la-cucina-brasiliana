@@ -1,0 +1,129 @@
+---
+import Base from '../layouts/Base.astro';
+import Separador from '../components/Separador.astro';
+---
+
+<Base titulo="Privacidade" descricao="O que La cucina brasiliana guarda sobre quem escreve no Caderno da cozinha.">
+  <article class="privacidade pagina">
+    <header class="topo">
+      <p class="versalete rotulo">La cucina brasiliana</p>
+      <h1>Privacidade</h1>
+      <Separador />
+      <p class="frase">Uma cozinha de hobby, com o mínimo de dados possível.</p>
+    </header>
+
+    <section>
+      <h2>Quem só visita</h2>
+      <p>
+        Ler o cardápio, as receitas e o Caderno da cozinha não exige conta. Não usamos ferramentas de análise,
+        anúncios nem cookies de terceiros.
+      </p>
+    </section>
+
+    <section>
+      <h2>Quem entra com Google</h2>
+      <p>Para escrever e opinar, você entra com sua conta Google. A partir daí guardamos:</p>
+      <ul>
+        <li>
+          <strong>Seu nome</strong>, que aparece junto do que você escreve. Você pode mudá-lo em
+          <a href="/conta">Minha conta</a>.
+        </li>
+        <li>
+          <strong>Seu e-mail e o identificador da conta Google</strong>, usados só para o login. Eles nunca aparecem
+          no site.
+        </li>
+        <li><strong>O que você publica</strong>: publicações, opiniões e denúncias, com a data.</li>
+      </ul>
+      <p>
+        Não guardamos sua foto da conta Google nem lemos nada além do que o Google envia no login (nome e
+        e-mail).
+      </p>
+    </section>
+
+    <section>
+      <h2>Onde ficam os dados</h2>
+      <p>
+        No <a href="https://supabase.com" rel="noopener">Supabase</a>, o serviço de banco de dados e login do site. O
+        site em si é servido pela <a href="https://vercel.com" rel="noopener">Vercel</a>.
+      </p>
+    </section>
+
+    <section>
+      <h2>Cookies</h2>
+      <p>
+        Só um: o cookie de sessão, que mantém você conectado depois de entrar. Ele some quando você clica em
+        <strong>Sair</strong>. A escolha de tema claro ou escuro fica guardada no seu próprio navegador.
+      </p>
+    </section>
+
+    <section>
+      <h2>Seus direitos</h2>
+      <p>
+        Você pode apagar a sua conta a qualquer momento em <a href="/conta">Minha conta</a>. Isso remove, na hora e
+        para sempre, seu perfil, suas publicações e suas opiniões. Para qualquer outra dúvida, escreva para
+        [E-MAIL DE CONTATO — preencher].
+      </p>
+    </section>
+  </article>
+</Base>
+
+<style>
+  .privacidade {
+    max-width: 44rem;
+  }
+
+  .topo {
+    display: grid;
+    justify-items: center;
+    gap: 0.75rem;
+    margin-bottom: 2.5rem;
+    text-align: center;
+  }
+
+  h1 {
+    font-size: clamp(2.5rem, 1.8rem + 3.5vw, 4rem);
+    line-height: 1;
+  }
+
+  .frase {
+    font-style: italic;
+    color: var(--cor-texto-2);
+  }
+
+  section {
+    max-width: var(--largura-texto);
+    margin-inline: auto;
+  }
+
+  section + section {
+    margin-top: 2rem;
+  }
+
+  h2 {
+    margin-bottom: 0.6rem;
+    font-size: 1.4rem;
+  }
+
+  p + p,
+  p + ul,
+  ul + p {
+    margin-top: 0.75rem;
+  }
+
+  ul {
+    margin-bottom: 0;
+    padding-left: 1.2rem;
+  }
+
+  li + li {
+    margin-top: 0.4rem;
+  }
+
+  li::marker {
+    color: var(--cor-destaque);
+  }
+
+  strong {
+    font-weight: 500;
+  }
+</style>

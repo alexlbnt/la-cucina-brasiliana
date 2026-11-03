@@ -5,6 +5,7 @@ import Ratinho from './Ratinho.astro';
 <footer class="rodape">
   <Ratinho tamanho={84} />
   <p class="versalete">Buon appetito</p>
+  <p class="links"><a href="/privacidade">Privacidade</a></p>
 </footer>
 
 <style>
@@ -17,5 +18,17 @@ import Ratinho from './Ratinho.astro';
 
   p {
     color: var(--cor-texto-3);
+  }
+
+  .links {
+    font-size: 0.95rem;
+  }
+
+  .links a {
+    color: inherit;
+  }
+
+  .links a:hover {
+    color: var(--cor-destaque);
   }
 </style>
