@@ -6,14 +6,16 @@ import Ratinho from '../components/Ratinho.astro';
 
 <Base titulo="Página não encontrada" descricao="Esta página não está no cardápio.">
   <div class="pagina">
-    <Moldura class="nao-encontrada">
-      <Ratinho tamanho="min(60vw, 220px)" titulo="O ratinho da casa, segurando um raminho de manjericão" />
-      <p class="versalete rotulo">Erro 404</p>
-      <h1>Esse prato não está no cardápio</h1>
-      <p class="texto">A página que você procurou não existe, ou ainda está no fogo.</p>
-      <div class="acoes">
-        <a class="botao" href="/cardapio">Ver o cardápio</a>
-        <a class="versalete inicio" href="/">Voltar ao início</a>
+    <Moldura>
+      <div class="nao-encontrada">
+        <Ratinho tamanho="min(60vw, 220px)" titulo="O ratinho da casa, segurando um raminho de manjericão" />
+        <p class="versalete rotulo">Erro 404</p>
+        <h1>Esse prato não está no cardápio</h1>
+        <p class="texto">A página que você procurou não existe, ou ainda está no fogo.</p>
+        <div class="acoes">
+          <a class="botao" href="/cardapio">Ver o cardápio</a>
+          <a class="versalete inicio" href="/">Voltar ao início</a>
+        </div>
       </div>
     </Moldura>
   </div>
@@ -24,7 +26,7 @@ import Ratinho from '../components/Ratinho.astro';
     max-width: 44rem;
   }
 
-  .nao-encontrada :global(.moldura-interna) {
+  .nao-encontrada {
     display: grid;
     justify-items: center;
     gap: 1rem;

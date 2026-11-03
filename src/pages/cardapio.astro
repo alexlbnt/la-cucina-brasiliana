@@ -9,7 +9,7 @@ const secoes = agruparPorCategoria(await listarReceitas());
 
 <Base titulo="Cardápio" descricao="O cardápio de La cucina brasiliana: massas, arroz, peixes, acompanhamentos e ovos, do jeito que eu faço.">
   <div class="pagina">
-    <Moldura class="cardapio">
+    <Moldura>
       <header class="topo">
         <p class="versalete rotulo">La cucina brasiliana</p>
         <h1>Cardápio</h1>
@@ -43,7 +43,9 @@ const secoes = agruparPorCategoria(await listarReceitas());
         })
       }
 
-      <Separador class="fim" />
+      <div class="fim">
+        <Separador />
+      </div>
     </Moldura>
   </div>
 </Base>
@@ -98,6 +100,7 @@ const secoes = agruparPorCategoria(await listarReceitas());
   }
 
   h3 {
+    text-wrap: pretty;
     font-size: clamp(1.5rem, 1.2rem + 1.2vw, 2rem);
     color: var(--cor-texto);
   }

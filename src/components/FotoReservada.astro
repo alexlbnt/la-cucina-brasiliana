@@ -4,7 +4,7 @@ import Ratinho from './Ratinho.astro';
 ---
 
 <div class="foto-reservada">
-  <Ratinho tamanho={88} />
+  <Ratinho tamanho={72} />
   <p>Foto em breve</p>
 </div>
 
@@ -14,7 +14,7 @@ import Ratinho from './Ratinho.astro';
     place-content: center;
     justify-items: center;
     gap: 0.5rem;
-    aspect-ratio: 16 / 7;
+    height: clamp(9rem, 22vw, 14rem);
     background: var(--cor-cartao);
     border: 1px solid var(--cor-borda);
   }

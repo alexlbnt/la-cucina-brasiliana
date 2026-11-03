@@ -17,6 +17,8 @@ const { class: classe } = Astro.props;
 
 <style>
   .separador {
+    width: min(100%, 20rem);
+    margin-inline: auto;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -24,7 +26,7 @@ const { class: classe } = Astro.props;
   }
 
   .linha {
-    width: min(9rem, 28%);
+    flex: 1;
     height: 1px;
     background: var(--cor-destaque);
     opacity: 0.85;
