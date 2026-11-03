@@ -1,0 +1,294 @@
+---
+import type { GetStaticPaths } from 'astro';
+import Base from '../../layouts/Base.astro';
+import Moldura from '../../components/Moldura.astro';
+import Separador from '../../components/Separador.astro';
+import FotoReservada from '../../components/FotoReservada.astro';
+import { formatarNumero, listarReceitas, urlDaReceita, type Receita } from '../../lib/receitas';
+
+export const getStaticPaths = (async () => {
+  const receitas = await listarReceitas();
+  return receitas.map((receita, i) => ({
+    params: { slug: receita.id },
+    props: {
+      receita,
+      anterior: receitas[i - 1],
+      proxima: receitas[i + 1],
+    },
+  }));
+}) satisfies GetStaticPaths;
+
+interface Props {
+  receita: Receita;
+  anterior?: Receita;
+  proxima?: Receita;
+}
+
+const { receita, anterior, proxima } = Astro.props;
+const { numero, titulo, categoria, descricao, ingredientes, preparo, variacoes, foto } = receita.data;
+const temVariacoes = variacoes && variacoes.length > 0;
+---
+
+<Base titulo={titulo} descricao={descricao}>
+  <div class="pagina">
+    <Moldura as="article" class="receita">
+      <header class="topo">
+        <p class="versalete categoria">Receita {formatarNumero(numero)} · {categoria}</p>
+        <h1>{titulo}</h1>
+        <p class="descricao">{descricao}</p>
+        <Separador />
+      </header>
+
+      <div class="foto">
+        {foto ? <img src={foto} alt={titulo} loading="lazy" decoding="async" /> : <FotoReservada />}
+      </div>
+
+      <div class="corpo">
+        <section class="ingredientes" aria-labelledby="titulo-ingredientes">
+          <h2 id="titulo-ingredientes" class="versalete rotulo">Ingredientes</h2>
+          <ul>
+            {ingredientes.map((item) => <li>{item}</li>)}
+          </ul>
+          <p class="no-olho">Quantidades no olho, como o coração mandar!</p>
+        </section>
+
+        <section class="preparo" aria-labelledby="titulo-preparo">
+          <h2 id="titulo-preparo" class="versalete rotulo">Preparo</h2>
+          <ol>
+            {preparo.map((passo) => <li>{passo}</li>)}
+          </ol>
+
+          {
+            temVariacoes && (
+              <section class="variacoes" aria-labelledby="titulo-variacoes">
+                <h2 id="titulo-variacoes" class="versalete rotulo">
+                  {variacoes.length > 1 ? 'Variações' : 'Variação'}
+                </h2>
+                <ul>
+                  {variacoes.map((variacao) => (
+                    <li>
+                      {variacao.texto}
+                      {variacao.emTeste && <span class="em-teste versalete">em teste</span>}
+                    </li>
+                  ))}
+                </ul>
+              </section>
+            )
+          }
+        </section>
+      </div>
+
+      <nav class="vizinhas" aria-label="Outras receitas">
+        {
+          anterior ? (
+            <a class="vizinha anterior" href={urlDaReceita(anterior)} rel="prev">
+              <span class="versalete">← Anterior</span>
+              <span class="nome">{anterior.data.titulo}</span>
+            </a>
+          ) : (
+            <span />
+          )
+        }
+        {
+          proxima ? (
+            <a class="vizinha proxima" href={urlDaReceita(proxima)} rel="next">
+              <span class="versalete">Próxima →</span>
+              <span class="nome">{proxima.data.titulo}</span>
+            </a>
+          ) : (
+            <span />
+          )
+        }
+      </nav>
+    </Moldura>
+
+    <p class="voltar"><a class="versalete" href="/cardapio">Voltar ao cardápio</a></p>
+  </div>
+</Base>
+
+<style>
+  .pagina {
+    max-width: 60rem;
+  }
+
+  .topo {
+    display: grid;
+    justify-items: center;
+    gap: 1rem;
+    text-align: center;
+  }
+
+  .categoria {
+    color: var(--cor-destaque);
+  }
+
+  h1 {
+    font-size: clamp(2.125rem, 1.4rem + 3.4vw, 3.75rem);
+    max-width: 18ch;
+  }
+
+  .descricao {
+    max-width: 34rem;
+    font-size: clamp(1.2rem, 1.1rem + 0.4vw, 1.375rem);
+    font-style: italic;
+    color: var(--cor-texto-2);
+  }
+
+  .foto {
+    margin-block: clamp(2rem, 5vw, 3rem);
+  }
+
+  .foto img {
+    width: 100%;
+    aspect-ratio: 16 / 9;
+    object-fit: cover;
+    border: 1px solid var(--cor-borda);
+  }
+
+  .corpo {
+    display: grid;
+    gap: clamp(2.25rem, 5vw, 3rem);
+  }
+
+  @media (min-width: 52rem) {
+    .corpo {
+      grid-template-columns: minmax(14rem, 2fr) 3fr;
+      column-gap: clamp(2.5rem, 5vw, 4.5rem);
+    }
+  }
+
+  h2.versalete {
+    margin-bottom: 1rem;
+    font-weight: 500;
+  }
+
+  .ingredientes ul,
+  .variacoes ul {
+    margin: 0;
+    padding-left: 1.1rem;
+  }
+
+  .ingredientes li + li,
+  .variacoes li + li {
+    margin-top: 0.4rem;
+  }
+
+  .ingredientes li::marker,
+  .variacoes li::marker {
+    color: var(--cor-destaque);
+  }
+
+  .no-olho {
+    margin-top: 1.25rem;
+    font-size: 1rem;
+    font-style: italic;
+    color: var(--cor-texto-3);
+  }
+
+  /* Passos com número grande em azul-marinho */
+  .preparo ol {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    counter-reset: passo;
+  }
+
+  .preparo ol li {
+    counter-increment: passo;
+    display: grid;
+    grid-template-columns: 2.75rem 1fr;
+    align-items: baseline;
+    column-gap: 0.75rem;
+  }
+
+  .preparo ol li + li {
+    margin-top: 1rem;
+  }
+
+  .preparo ol li::before {
+    content: counter(passo);
+    font-family: var(--fonte-titulo);
+    font-weight: 700;
+    font-size: 2.25rem;
+    line-height: 1;
+    color: var(--cor-destaque);
+    text-align: right;
+  }
+
+  .variacoes {
+    margin-top: clamp(2rem, 5vw, 2.75rem);
+    padding-top: 1.75rem;
+    border-top: 1px solid var(--cor-borda);
+  }
+
+  .variacoes li {
+    font-style: italic;
+  }
+
+  .em-teste {
+    display: inline-block;
+    margin-left: 0.6rem;
+    padding: 0.05rem 0.4rem 0 0.55rem;
+    border: 1px solid var(--cor-rotulo);
+    color: var(--cor-rotulo);
+    font-style: normal;
+    font-size: 0.6875rem;
+    letter-spacing: 0.3em;
+    vertical-align: 0.15em;
+  }
+
+  /* Navegação entre receitas */
+  .vizinhas {
+    display: grid;
+    gap: 1.25rem;
+    margin-top: clamp(2.5rem, 6vw, 3.5rem);
+    padding-top: 1.75rem;
+    border-top: 1px solid var(--cor-destaque);
+  }
+
+  @media (min-width: 40rem) {
+    .vizinhas {
+      grid-template-columns: 1fr 1fr;
+    }
+  }
+
+  .vizinha {
+    display: grid;
+    gap: 0.25rem;
+    text-decoration: none;
+  }
+
+  .vizinha .versalete {
+    font-size: 0.75rem;
+    color: var(--cor-texto-3);
+  }
+
+  .vizinha .nome {
+    font-family: var(--fonte-titulo);
+    font-weight: 600;
+    font-size: 1.2rem;
+    line-height: 1.25;
+    text-decoration: underline;
+    text-decoration-color: transparent;
+    transition: text-decoration-color 0.15s ease;
+  }
+
+  .vizinha:hover .nome {
+    text-decoration-color: currentColor;
+  }
+
+  @media (min-width: 40rem) {
+    .proxima {
+      text-align: right;
+    }
+  }
+
+  .voltar {
+    margin-top: 2rem;
+    text-align: center;
+  }
+
+  .voltar a {
+    text-decoration: none;
+  }
+</style>
