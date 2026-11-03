@@ -1,6 +1,8 @@
 /* ------------------------------------------------------------------
    La cucina brasiliana — estilos globais
    Paleta da casa (fixa) + papéis semânticos (mudam no modo escuro).
+   O tema segue o sistema até a pessoa escolher no cabeçalho; a escolha
+   fica em <html data-tema="claro|escuro">.
    ------------------------------------------------------------------ */
 
 :root {
@@ -12,9 +14,9 @@
   --marinho-escuro: #141e36;
   --manjericao: #4a6b3a;
   --manjericao-claro: #b9cda8;
-  --texto: #2a2420;
-  --texto-2: #3d352f;
-  --texto-3: #5e5247;
+  --texto: var(--marinho);
+  --texto-2: #2b3a5c;
+  --texto-3: #4a5776;
 
   /* Papéis */
   --cor-fundo: var(--creme);
@@ -39,8 +41,22 @@
   color-scheme: light;
 }
 
+:root[data-tema='escuro'] {
+  --cor-fundo: var(--marinho);
+  --cor-cartao: #26365a;
+  --cor-borda: #45567c;
+  --cor-destaque: var(--creme);
+  --cor-destaque-hover: #ffffff;
+  --cor-rotulo: var(--manjericao-claro);
+  --cor-texto: var(--creme);
+  --cor-texto-2: #e6dfd1;
+  --cor-texto-3: #cfc6b5;
+
+  color-scheme: dark;
+}
+
 @media (prefers-color-scheme: dark) {
-  :root {
+  :root:not([data-tema='claro']) {
     --cor-fundo: var(--marinho);
     --cor-cartao: #26365a;
     --cor-borda: #45567c;
