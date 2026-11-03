@@ -1,0 +1,173 @@
+---
+import Base from '../../layouts/Base.astro';
+import Moldura from '../../components/Moldura.astro';
+import Separador from '../../components/Separador.astro';
+import BarraDoCaderno from '../../components/caderno/BarraDoCaderno.astro';
+import { LIMITES, mensagemDeErro } from '../../lib/caderno';
+import { listarReceitas } from '../../lib/receitas';
+
+export const prerender = false;
+
+const { supabase, perfil } = Astro.locals;
+if (!supabase) return Astro.redirect('/', 303);
+if (!perfil) return Astro.redirect(`/entrar?proximo=${encodeURIComponent(Astro.url.pathname)}`, 303);
+
+const receitas = await listarReceitas();
+const slugs = new Set(receitas.map((r) => r.id));
+const ehAdmin = perfil.papel === 'admin';
+
+let titulo = '';
+let texto = '';
+let prato = Astro.url.searchParams.get('prato') ?? '';
+let erro = '';
+
+if (Astro.request.method === 'POST') {
+  const formulario = await Astro.request.formData();
+  titulo = String(formulario.get('titulo') ?? '').trim();
+  texto = String(formulario.get('texto') ?? '').trim();
+  prato = String(formulario.get('prato') ?? '');
+
+  if (String(formulario.get('site') ?? '') !== '') {
+    // Campo-isca preenchido: robô. Finge que deu certo.
+    return Astro.redirect('/', 303);
+  }
+
+  if (titulo.length < LIMITES.titulo.min || titulo.length > LIMITES.titulo.max) {
+    erro = `O título precisa ter entre ${LIMITES.titulo.min} e ${LIMITES.titulo.max} caracteres.`;
+  } else if (texto.length < LIMITES.texto.min || texto.length > LIMITES.texto.max) {
+    erro = `O texto precisa ter entre ${LIMITES.texto.min} e ${LIMITES.texto.max} caracteres.`;
+  } else {
+    const { data, error } = await supabase
+      .from('publicacoes')
+      .insert({ titulo, texto, prato_slug: slugs.has(prato) ? prato : null })
+      .select('id, status')
+      .single();
+    if (error || !data) {
+      erro = mensagemDeErro(error);
+    } else {
+      const ok = data.status === 'aprovada' ? 'publicada' : 'enviada';
+      return Astro.redirect(`/caderno/${data.id}?ok=${ok}`, 303);
+    }
+  }
+}
+---
+
+<Base titulo="Escrever no caderno" descricao="Escreva no Caderno da cozinha de La cucina brasiliana.">
+  <div class="pagina">
+    <BarraDoCaderno />
+    <Moldura>
+      <header class="topo">
+        <p class="versalete rotulo">Caderno da cozinha</p>
+        <h1>Escrever no caderno</h1>
+        <Separador />
+        <p class="frase">Conte o que você cozinhou, como ficou, o que trocou ou o que inventou.</p>
+      </header>
+
+      <form method="post" class="formulario">
+        <div class="campo">
+          <label for="titulo">Título</label>
+          <input
+            id="titulo"
+            name="titulo"
+            value={titulo}
+            required
+            minlength={LIMITES.titulo.min}
+            maxlength={LIMITES.titulo.max}
+            autocomplete="off"
+          />
+        </div>
+
+        <div class="campo">
+          <label for="prato">Prato do cardápio</label>
+          <select id="prato" name="prato" aria-describedby="dica-prato">
+            <option value="">Nenhum em especial</option>
+            {
+              receitas.map((receita) => (
+                <option value={receita.id} selected={receita.id === prato}>
+                  {receita.data.titulo}
+                </option>
+              ))
+            }
+          </select>
+          <p class="dica" id="dica-prato">Opcional: ligue sua publicação a um prato da casa.</p>
+        </div>
+
+        <div class="campo">
+          <label for="texto">Texto</label>
+          <textarea
+            id="texto"
+            name="texto"
+            rows="10"
+            required
+            minlength={LIMITES.texto.min}
+            maxlength={LIMITES.texto.max}
+            aria-describedby="dica-texto">{texto}</textarea>
+          <p class="dica" id="dica-texto">
+            Deixe uma linha em branco para começar outro parágrafo. Dá para usar **negrito** e *itálico*.
+          </p>
+        </div>
+
+        <div class="isca" aria-hidden="true">
+          <label for="site">Não preencha este campo</label>
+          <input id="site" name="site" tabindex="-1" autocomplete="off" />
+        </div>
+
+        {erro && <p class="aviso erro" role="alert">{erro}</p>}
+
+        {
+          !ehAdmin && (
+            <p class="aviso">
+              Toda publicação passa por uma leitura antes de aparecer no caderno. Costuma ser rápido!
+            </p>
+          )
+        }
+
+        <div class="acoes">
+          <button class="botao cheio" type="submit">Enviar publicação</button>
+          <a class="botao-texto" href="/">Cancelar</a>
+        </div>
+      </form>
+    </Moldura>
+  </div>
+</Base>
+
+<style>
+  .pagina {
+    display: grid;
+    gap: 1.75rem;
+    max-width: 48rem;
+  }
+
+  .topo {
+    display: grid;
+    justify-items: center;
+    gap: 0.75rem;
+    margin-bottom: 2rem;
+    text-align: center;
+  }
+
+  h1 {
+    font-size: clamp(2rem, 1.4rem + 3vw, 3.25rem);
+  }
+
+  .frase {
+    font-style: italic;
+    color: var(--cor-texto-2);
+  }
+
+  .formulario {
+    display: grid;
+    gap: 1.5rem;
+  }
+
+  .formulario .campo + .campo {
+    margin-top: 0;
+  }
+
+  .acoes {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 1rem 1.75rem;
+  }
+</style>

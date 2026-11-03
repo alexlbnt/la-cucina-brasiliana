@@ -1,0 +1,473 @@
+---
+import Base from '../../layouts/Base.astro';
+import Moldura from '../../components/Moldura.astro';
+import Separador from '../../components/Separador.astro';
+import Assinatura from '../../components/caderno/Assinatura.astro';
+import BarraDoCaderno from '../../components/caderno/BarraDoCaderno.astro';
+import {
+  LIMITES,
+  colunasPublicacao,
+  mensagemDeErro,
+  type Opiniao,
+  type Publicacao,
+} from '../../lib/caderno';
+import { mapaDePratos } from '../../lib/receitas';
+import { formatarTexto, resumir } from '../../lib/texto';
+
+export const prerender = false;
+
+const { supabase, perfil } = Astro.locals;
+const { id = '' } = Astro.params;
+
+if (!supabase || !/^[0-9a-f-]{36}$/i.test(id)) {
+  return new Response(null, { status: 404, statusText: 'Not Found' });
+}
+
+const ehAdmin = perfil?.papel === 'admin';
+const aqui = Astro.url.pathname;
+
+const MENSAGENS: Record<string, string> = {
+  opiniao: 'Sua opinião foi publicada. Obrigado!',
+  denuncia: 'Denúncia recebida. Vamos dar uma olhada.',
+  ocultada: 'A opinião foi ocultada.',
+  mostrada: 'A opinião voltou a aparecer.',
+  'opiniao-apagada': 'A opinião foi apagada.',
+  aprovada: 'Publicação aprovada. Ela já aparece no caderno.',
+  recusada: 'Publicação recusada.',
+  enviada: 'Recebemos sua publicação! Ela aparece no caderno assim que for aprovada.',
+  publicada: 'Sua publicação já está no caderno.',
+};
+
+let erroOpiniao = '';
+let rascunho = '';
+
+// ---------- Ações (formulários desta página) ----------
+if (Astro.request.method === 'POST') {
+  if (!perfil) return Astro.redirect(`/entrar?proximo=${encodeURIComponent(aqui)}`, 303);
+
+  const formulario = await Astro.request.formData();
+  const acao = String(formulario.get('acao') ?? '');
+  const alvo = String(formulario.get('alvo') ?? '');
+  let resultado: { error: { message?: string } | null } = { error: null };
+  let sucesso = '';
+
+  switch (acao) {
+    case 'opinar': {
+      rascunho = String(formulario.get('texto') ?? '').trim();
+      if (String(formulario.get('site') ?? '') !== '') {
+        // Campo-isca preenchido: robô. Finge que deu certo.
+        return Astro.redirect(`${aqui}?ok=opiniao#opinioes`, 303);
+      }
+      if (rascunho.length < LIMITES.opiniao.min || rascunho.length > LIMITES.opiniao.max) {
+        erroOpiniao = `Escreva entre ${LIMITES.opiniao.min} e ${LIMITES.opiniao.max} caracteres.`;
+        break;
+      }
+      resultado = await supabase.from('opinioes').insert({ publicacao_id: id, texto: rascunho });
+      if (resultado.error) {
+        erroOpiniao = mensagemDeErro(resultado.error);
+        break;
+      }
+      sucesso = 'opiniao';
+      break;
+    }
+    case 'denunciar':
+      resultado = await supabase.from('denuncias').insert({ opiniao_id: alvo });
+      // Denunciar de novo a mesma opinião não é erro para quem denuncia.
+      if (resultado.error?.message?.includes('duplicate key')) resultado = { error: null };
+      sucesso = 'denuncia';
+      break;
+    case 'ocultar':
+    case 'mostrar':
+      resultado = await supabase.from('opinioes').update({ oculta: acao === 'ocultar' }).eq('id', alvo);
+      if (!resultado.error && acao === 'ocultar') {
+        await supabase.from('denuncias').update({ resolvida: true }).eq('opiniao_id', alvo);
+      }
+      sucesso = acao === 'ocultar' ? 'ocultada' : 'mostrada';
+      break;
+    case 'apagar-opiniao':
+      resultado = await supabase.from('opinioes').delete().eq('id', alvo);
+      sucesso = 'opiniao-apagada';
+      break;
+    case 'aprovar':
+    case 'recusar':
+      resultado = await supabase
+        .from('publicacoes')
+        .update({ status: acao === 'aprovar' ? 'aprovada' : 'recusada' })
+        .eq('id', id);
+      sucesso = acao === 'aprovar' ? 'aprovada' : 'recusada';
+      break;
+    case 'apagar-publicacao':
+      resultado = await supabase.from('publicacoes').delete().eq('id', id);
+      if (!resultado.error) return Astro.redirect('/conta?ok=apagada', 303);
+      break;
+  }
+
+  if (sucesso && !resultado.error) {
+    return Astro.redirect(`${aqui}?ok=${sucesso}${acao === 'aprovar' || acao === 'recusar' ? '' : '#opinioes'}`, 303);
+  }
+  if (!erroOpiniao && resultado.error) {
+    return Astro.redirect(`${aqui}?erro=1#opinioes`, 303);
+  }
+}
+
+// ---------- Leitura ----------
+const { data: dadosPublicacao } = await supabase
+  .from('publicacoes')
+  .select(colunasPublicacao())
+  .eq('id', id)
+  .maybeSingle();
+
+const publicacao = dadosPublicacao as Publicacao | null;
+if (!publicacao) return new Response(null, { status: 404, statusText: 'Not Found' });
+
+const { data: dadosOpinioes } = await supabase
+  .from('opinioes')
+  .select('id, publicacao_id, autor_id, texto, oculta, criada_em, autor:perfis(nome, papel)')
+  .eq('publicacao_id', id)
+  .order('criada_em', { ascending: true });
+const opinioes = (dadosOpinioes as Opiniao[] | null) ?? [];
+
+// Opiniões que esta pessoa já denunciou, para mostrar "denunciada".
+let jaDenunciadas = new Set<string>();
+if (perfil && opinioes.length > 0) {
+  const { data } = await supabase
+    .from('denuncias')
+    .select('opiniao_id')
+    .eq('autor_id', perfil.id)
+    .in(
+      'opiniao_id',
+      opinioes.map((o) => o.id),
+    );
+  jaDenunciadas = new Set((data ?? []).map((d: { opiniao_id: string }) => d.opiniao_id));
+}
+
+const pratos = await mapaDePratos();
+const prato = publicacao.prato_slug ? pratos.get(publicacao.prato_slug) : undefined;
+const ehAutor = perfil?.id === publicacao.autor_id;
+const aprovada = publicacao.status === 'aprovada';
+const ok = MENSAGENS[Astro.url.searchParams.get('ok') ?? ''];
+const deuErro = Astro.url.searchParams.has('erro');
+---
+
+<Base titulo={publicacao.titulo} descricao={resumir(publicacao.texto, 160)}>
+  <div class="pagina">
+    <BarraDoCaderno />
+
+    {ok && <p class="aviso mensagem" role="status">{ok}</p>}
+    {deuErro && <p class="aviso erro mensagem" role="alert">Não deu certo desta vez. Tente de novo em instantes.</p>}
+
+    {
+      !aprovada && (
+        <div class="aviso situacao" role="note">
+          {publicacao.status === 'pendente' ? (
+            <p>
+              <strong>Aguardando aprovação.</strong>{' '}
+              {ehAutor
+                ? 'Só você vê esta publicação por enquanto.'
+                : 'Só quem escreveu e a moderação veem esta publicação por enquanto.'}
+            </p>
+          ) : (
+            <p>
+              <strong>Publicação recusada.</strong> Ela não aparece no caderno.
+            </p>
+          )}
+          {ehAdmin && (
+            <form method="post" class="moderacao">
+              <button class="botao cheio" type="submit" name="acao" value="aprovar">
+                Aprovar
+              </button>
+              {publicacao.status === 'pendente' && (
+                <button class="botao" type="submit" name="acao" value="recusar">
+                  Recusar
+                </button>
+              )}
+            </form>
+          )}
+        </div>
+      )
+    }
+
+    <Moldura as="article">
+      <header class="topo">
+        <p class="versalete rotulo">Caderno da cozinha</p>
+        <h1>{publicacao.titulo}</h1>
+        {
+          prato && publicacao.prato_slug && (
+            <p class="prato">
+              Sobre o prato <a href={`/receitas/${publicacao.prato_slug}`}>{prato}</a>
+            </p>
+          )
+        }
+        <Assinatura autor={publicacao.autor} data={publicacao.publicada_em ?? publicacao.criada_em} tamanho={40} />
+      </header>
+      <Separador />
+      <div class="texto-livre corpo" set:html={formatarTexto(publicacao.texto)} />
+
+      {
+        (ehAutor || ehAdmin) && (
+          <details class="apagar">
+            <summary class="botao-texto">Apagar publicação</summary>
+            <form method="post">
+              <p>Isso apaga a publicação e todas as opiniões dela. Não dá para desfazer.</p>
+              <button class="botao" type="submit" name="acao" value="apagar-publicacao">
+                Sim, apagar
+              </button>
+            </form>
+          </details>
+        )
+      }
+    </Moldura>
+
+    {(aprovada || opinioes.length > 0) && (
+    <section id="opinioes" class="opinioes" aria-labelledby="titulo-opinioes">
+      <h2 id="titulo-opinioes">
+        {opinioes.length === 0 ? 'Opiniões' : opinioes.length === 1 ? '1 opinião' : `${opinioes.length} opiniões`}
+      </h2>
+
+      {
+        opinioes.length > 0 ? (
+          <ol class="lista-opinioes">
+            {opinioes.map((opiniao) => {
+              const minha = perfil?.id === opiniao.autor_id;
+              return (
+                <li class:list={['opiniao', { oculta: opiniao.oculta }]} id={`opiniao-${opiniao.id}`}>
+                  <Assinatura autor={opiniao.autor} data={opiniao.criada_em} tamanho={32} />
+                  {opiniao.oculta && (
+                    <p class="versalete marca-oculta">
+                      {minha ? 'Oculta pela moderação: só você vê' : 'Oculta'}
+                    </p>
+                  )}
+                  <div class="texto-livre" set:html={formatarTexto(opiniao.texto)} />
+                  {perfil && (
+                    <form method="post" class="acoes-opiniao">
+                      <input type="hidden" name="alvo" value={opiniao.id} />
+                      {!minha &&
+                        !ehAdmin &&
+                        (jaDenunciadas.has(opiniao.id) ? (
+                          <span class="versalete denunciada">Denunciada</span>
+                        ) : (
+                          <button class="botao-texto" type="submit" name="acao" value="denunciar">
+                            Denunciar
+                          </button>
+                        ))}
+                      {ehAdmin && (
+                        <button
+                          class="botao-texto"
+                          type="submit"
+                          name="acao"
+                          value={opiniao.oculta ? 'mostrar' : 'ocultar'}
+                        >
+                          {opiniao.oculta ? 'Mostrar' : 'Ocultar'}
+                        </button>
+                      )}
+                      {(minha || ehAdmin) && (
+                        <button class="botao-texto" type="submit" name="acao" value="apagar-opiniao">
+                          Apagar
+                        </button>
+                      )}
+                    </form>
+                  )}
+                </li>
+              );
+            })}
+          </ol>
+        ) : (
+          aprovada && <p class="sem-opinioes">Ninguém opinou ainda.</p>
+        )
+      }
+
+      {
+        aprovada &&
+          (perfil ? (
+            <form method="post" class="nova-opiniao" action={`${aqui}#opinioes`}>
+              <input type="hidden" name="acao" value="opinar" />
+              <div class="campo">
+                <label for="texto-opiniao">Sua opinião</label>
+                <textarea
+                  id="texto-opiniao"
+                  name="texto"
+                  rows="4"
+                  required
+                  minlength={LIMITES.opiniao.min}
+                  maxlength={LIMITES.opiniao.max}
+                  aria-describedby="dica-opiniao"
+                  aria-invalid={erroOpiniao ? 'true' : undefined}
+                >{rascunho}</textarea>
+                <p class="dica" id="dica-opiniao">
+                  Gentileza é o tempero da casa. Dá para usar **negrito** e *itálico*.
+                </p>
+              </div>
+              <div class="isca" aria-hidden="true">
+                <label for="site-opiniao">Não preencha este campo</label>
+                <input id="site-opiniao" name="site" tabindex="-1" autocomplete="off" />
+              </div>
+              {erroOpiniao && (
+                <p class="aviso erro" role="alert">
+                  {erroOpiniao}
+                </p>
+              )}
+              <button class="botao cheio" type="submit">
+                Publicar opinião
+              </button>
+            </form>
+          ) : (
+            <p class="convite">
+              <a href={`/entrar?proximo=${encodeURIComponent(`${aqui}#opinioes`)}`}>Entre com sua conta Google</a>
+              para deixar sua opinião.
+            </p>
+          ))
+      }
+    </section>
+    )}
+
+    <p class="voltar"><a class="versalete" href="/">Voltar ao caderno</a></p>
+  </div>
+</Base>
+
+<style>
+  .pagina {
+    display: grid;
+    gap: 1.75rem;
+    max-width: 48rem;
+  }
+
+  .situacao {
+    display: grid;
+    gap: 1rem;
+  }
+
+  .moderacao {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+  }
+
+  .topo {
+    display: grid;
+    justify-items: center;
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+    text-align: center;
+  }
+
+  h1 {
+    font-size: clamp(2rem, 1.4rem + 3vw, 3.25rem);
+  }
+
+  .prato {
+    font-style: italic;
+    color: var(--cor-texto-2);
+  }
+
+  .corpo {
+    max-width: var(--largura-texto);
+    margin: 2rem auto 0;
+  }
+
+  .apagar {
+    max-width: var(--largura-texto);
+    margin: 2.5rem auto 0;
+    padding-top: 1rem;
+    border-top: 1px solid var(--cor-borda);
+  }
+
+  .apagar summary {
+    list-style: none;
+  }
+
+  .apagar summary::-webkit-details-marker {
+    display: none;
+  }
+
+  .apagar form {
+    display: grid;
+    justify-items: start;
+    gap: 0.75rem;
+    margin-top: 0.75rem;
+    color: var(--cor-texto-2);
+  }
+
+  /* Opiniões */
+  .opinioes {
+    display: grid;
+    gap: 1.5rem;
+    scroll-margin-top: 1rem;
+  }
+
+  h2 {
+    font-size: clamp(1.6rem, 1.3rem + 1.2vw, 2.1rem);
+  }
+
+  .lista-opinioes {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .opiniao {
+    display: grid;
+    gap: 0.75rem;
+    padding-block: 1.25rem;
+    border-top: 1px solid var(--cor-borda);
+  }
+
+  .opiniao.oculta {
+    opacity: 0.7;
+  }
+
+  .opiniao .texto-livre {
+    padding-left: calc(32px + 0.75rem);
+  }
+
+  .marca-oculta,
+  .denunciada {
+    font-size: 0.6875rem;
+    color: var(--cor-texto-3);
+  }
+
+  .acoes-opiniao {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0 1.25rem;
+    padding-left: calc(32px + 0.75rem);
+  }
+
+  .sem-opinioes {
+    font-style: italic;
+    color: var(--cor-texto-3);
+  }
+
+  .nova-opiniao {
+    display: grid;
+    justify-items: start;
+    gap: 1rem;
+    padding: clamp(1.25rem, 4vw, 1.75rem);
+    background: var(--cor-cartao);
+    border: 1px solid var(--cor-borda);
+  }
+
+  .nova-opiniao .campo {
+    width: 100%;
+  }
+
+  .nova-opiniao textarea {
+    min-height: 7rem;
+    background: var(--cor-fundo);
+  }
+
+  .convite {
+    padding: 1.25rem;
+    border: 1px dashed var(--cor-borda);
+    text-align: center;
+    color: var(--cor-texto-2);
+  }
+
+  .voltar {
+    text-align: center;
+  }
+
+  .voltar a {
+    text-decoration: none;
+  }
+</style>
