@@ -1,0 +1,136 @@
+---
+import Base from '../layouts/Base.astro';
+import Moldura from '../components/Moldura.astro';
+import Separador from '../components/Separador.astro';
+import { agruparPorCategoria, formatarNumero, listarReceitas, urlDaReceita } from '../lib/receitas';
+
+const secoes = agruparPorCategoria(await listarReceitas());
+---
+
+<Base titulo="Cardápio" descricao="O cardápio de La cucina brasiliana: massas, arroz, peixes, acompanhamentos e ovos, do jeito que eu faço.">
+  <div class="pagina">
+    <Moldura class="cardapio">
+      <header class="topo">
+        <p class="versalete rotulo">La cucina brasiliana</p>
+        <h1>Cardápio</h1>
+        <Separador />
+        <p class="frase">Base italiana, ingredientes simples e espaço para improvisar</p>
+      </header>
+
+      {
+        secoes.map(({ categoria, receitas }) => {
+          const idSecao = `secao-${categoria.toLowerCase()}`;
+          return (
+            <section class="secao" aria-labelledby={idSecao}>
+              <h2 id={idSecao} class="versalete">
+                {categoria}
+              </h2>
+              <ul class="pratos">
+                {receitas.map((receita) => (
+                  <li class="prato">
+                    <h3>
+                      <a href={urlDaReceita(receita)}>{receita.data.titulo}</a>
+                    </h3>
+                    <span class="numero" aria-hidden="true">
+                      {formatarNumero(receita.data.numero)}
+                    </span>
+                    <p>{receita.data.descricao}</p>
+                  </li>
+                ))}
+              </ul>
+            </section>
+          );
+        })
+      }
+
+      <Separador class="fim" />
+    </Moldura>
+  </div>
+</Base>
+
+<style>
+  .pagina {
+    max-width: 56rem;
+  }
+
+  .topo {
+    display: grid;
+    justify-items: center;
+    gap: 0.75rem;
+    text-align: center;
+    margin-bottom: clamp(2rem, 6vw, 3.5rem);
+  }
+
+  h1 {
+    font-size: clamp(3rem, 2rem + 6vw, 5.5rem);
+    line-height: 1;
+  }
+
+  .frase {
+    font-style: italic;
+    color: var(--cor-texto-2);
+  }
+
+  .secao + .secao {
+    margin-top: clamp(1.75rem, 4vw, 2.5rem);
+  }
+
+  h2 {
+    color: var(--cor-destaque);
+    margin-bottom: 0.5rem;
+  }
+
+  .pratos {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .prato {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    column-gap: 1.25rem;
+    row-gap: 0.4rem;
+  }
+
+  .prato + .prato {
+    margin-top: 1.5rem;
+  }
+
+  h3 {
+    font-size: clamp(1.5rem, 1.2rem + 1.2vw, 2rem);
+    color: var(--cor-texto);
+  }
+
+  h3 a {
+    color: inherit;
+    text-decoration: underline;
+    text-decoration-color: transparent;
+    transition: color 0.15s ease, text-decoration-color 0.15s ease;
+  }
+
+  h3 a:hover,
+  h3 a:focus-visible {
+    color: var(--cor-destaque);
+    text-decoration-color: currentColor;
+  }
+
+  .numero {
+    align-self: baseline;
+    font-family: var(--fonte-titulo);
+    font-style: italic;
+    font-weight: 400;
+    font-size: 1.25rem;
+    color: var(--cor-destaque);
+  }
+
+  .prato p {
+    grid-column: 1 / -1;
+    max-width: var(--largura-texto);
+    color: var(--cor-texto-2);
+  }
+
+  .fim {
+    margin-top: clamp(2.5rem, 6vw, 3.5rem);
+  }
+</style>
