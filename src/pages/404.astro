@@ -2,6 +2,10 @@
 import Base from '../layouts/Base.astro';
 import Moldura from '../components/Moldura.astro';
 import Ratinho from '../components/Ratinho.astro';
+
+// Renderizada na hora: assim as páginas do Caderno conseguem responder com
+// esta 404 (na Vercel, uma 404 estática não fica disponível para elas).
+export const prerender = false;
 ---
 
 <Base titulo="Página não encontrada" descricao="Esta página não está no cardápio.">
