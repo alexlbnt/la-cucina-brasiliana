@@ -1,0 +1,56 @@
+---
+import Base from '../layouts/Base.astro';
+import Moldura from '../components/Moldura.astro';
+import Ratinho from '../components/Ratinho.astro';
+---
+
+<Base titulo="Página não encontrada" descricao="Esta página não está no cardápio.">
+  <div class="pagina">
+    <Moldura class="nao-encontrada">
+      <Ratinho tamanho="min(60vw, 220px)" titulo="O ratinho da casa, segurando um raminho de manjericão" />
+      <p class="versalete rotulo">Erro 404</p>
+      <h1>Esse prato não está no cardápio</h1>
+      <p class="texto">A página que você procurou não existe, ou ainda está no fogo.</p>
+      <div class="acoes">
+        <a class="botao" href="/cardapio">Ver o cardápio</a>
+        <a class="versalete inicio" href="/">Voltar ao início</a>
+      </div>
+    </Moldura>
+  </div>
+</Base>
+
+<style>
+  .pagina {
+    max-width: 44rem;
+  }
+
+  .nao-encontrada :global(.moldura-interna) {
+    display: grid;
+    justify-items: center;
+    gap: 1rem;
+    text-align: center;
+  }
+
+  h1 {
+    font-size: clamp(2rem, 1.5rem + 2.5vw, 3rem);
+    max-width: 16ch;
+  }
+
+  .texto {
+    font-style: italic;
+    color: var(--cor-texto-2);
+  }
+
+  .acoes {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: center;
+    gap: 1rem 2rem;
+    margin-top: 1rem;
+  }
+
+  .inicio {
+    text-decoration: none;
+  }
+</style>
