@@ -54,24 +54,36 @@ export function tracosRaminho(cor: string): string {
 }
 
 export const TEXTO_SELO = 'LA CUCINA BRASILIANA · BUON APPETITO ·';
+export const RAIO_TEXTO_SELO = 148;
 
 /**
  * Selo: círculo duplo, texto circular e o ratinho no centro (sistema 400×400).
  * `idCaminho` precisa ser único na página, porque o textPath referencia um id.
+ * `textoEmContornos` substitui o <text> por contornos já desenhados, para quem
+ * não carrega fontes (favicon e PNGs gerados por scripts/gerar-imagens.mjs).
  */
-export function tracosSelo(traco: string, raminho: string, idCaminho: string): string {
+export function tracosSelo(
+  traco: string,
+  raminho: string,
+  idCaminho: string,
+  textoEmContornos?: string,
+): string {
   // Círculo de raio 148 que começa embaixo e corre no sentido horário,
   // assim o texto, centralizado no caminho, fica centralizado no topo.
-  const caminho = 'M 200 348 A 148 148 0 1 1 200 52 A 148 148 0 1 1 200 348';
+  const r = RAIO_TEXTO_SELO;
+  const caminho = `M 200 ${200 + r} A ${r} ${r} 0 1 1 200 ${200 - r} A ${r} ${r} 0 1 1 200 ${200 + r}`;
+  const texto = textoEmContornos
+    ? `<g style="fill:${traco}">${textoEmContornos}</g>`
+    : `<text style="fill:${traco}" font-family="'EB Garamond', Garamond, 'Times New Roman', serif" font-size="22" letter-spacing="5">
+    <textPath href="#${idCaminho}" startOffset="50%" text-anchor="middle">${TEXTO_SELO}</textPath>
+  </text>`;
   return `
-  <defs><path id="${idCaminho}" d="${caminho}"/></defs>
+  ${textoEmContornos ? '' : `<defs><path id="${idCaminho}" d="${caminho}"/></defs>`}
   <g style="stroke:${traco}" fill="none">
     <circle cx="200" cy="200" r="190" stroke-width="4"/>
     <circle cx="200" cy="200" r="180" stroke-width="1.5"/>
   </g>
-  <text style="fill:${traco}" font-family="'EB Garamond', Garamond, 'Times New Roman', serif" font-size="22" letter-spacing="5">
-    <textPath href="#${idCaminho}" startOffset="50%" text-anchor="middle">${TEXTO_SELO}</textPath>
-  </text>
+  ${texto}
   <g transform="translate(103,124) scale(0.88)" fill="none" stroke-linecap="round" stroke-linejoin="round">
     ${tracosRatinho(traco, raminho)}
   </g>`;
