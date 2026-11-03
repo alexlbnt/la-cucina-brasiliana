@@ -2,7 +2,7 @@
 
 Meu repertório de pratos, do jeito que eu faço: base italiana, ingredientes simples e espaço para improvisar. Quantidades no olho, como o coração mandar!
 
-Site estático feito com [Astro](https://astro.build), TypeScript e CSS próprio. Sem backend, sem banco, sem rastreamento.
+Feito com [Astro](https://astro.build), TypeScript e CSS próprio. O cardápio, as receitas e a Sobre são páginas estáticas. O **Caderno da cozinha**, na página inicial, é um mural onde quem entra com Google escreve publicações e opiniões, guardadas no [Supabase](https://supabase.com). Sem analytics, sem anúncios, sem cookies de terceiros.
 
 ## Como rodar
 
@@ -13,14 +13,16 @@ npm install     # instala as dependências (só na primeira vez)
 npm run dev     # abre o site em http://localhost:4321 e recarrega a cada mudança
 ```
 
+Sem o arquivo `.env`, o site funciona normalmente e o Caderno mostra o aviso "ainda está sendo preparado". Para ligá-lo, veja [Caderno da cozinha](#caderno-da-cozinha).
+
 Outros comandos:
 
-| Comando           | O que faz                                                   |
-| ----------------- | ----------------------------------------------------------- |
-| `npm run build`   | gera o site pronto para publicar na pasta `dist/`           |
-| `npm run preview` | serve a pasta `dist/` localmente, para conferir o build     |
-| `npm run check`   | confere os tipos e o frontmatter das receitas               |
-| `npm run imagens` | refaz o favicon e a imagem de compartilhamento (veja abaixo)|
+| Comando           | O que faz                                                        |
+| ----------------- | ---------------------------------------------------------------- |
+| `npm run build`   | gera o site no formato da Vercel (pasta `.vercel/output/`)       |
+| `npm run check`   | confere os tipos e o frontmatter das receitas                    |
+| `npm run testar`  | roda os testes (formatação de texto e regras de acesso do banco) |
+| `npm run imagens` | refaz o favicon e a imagem de compartilhamento (veja abaixo)     |
 
 ## Como adicionar uma receita
 
@@ -65,16 +67,73 @@ Enquanto `foto` estiver vazio, a receita mostra um espaço reservado discreto co
 
 As seções do cardápio e a ordem delas ficam em `src/lib/categorias.ts`. Acrescente o nome lá e use-o no campo `categoria`.
 
+## Caderno da cozinha
+
+O mural da página inicial. Qualquer pessoa lê. Para escrever ou opinar, é preciso entrar com Google.
+
+- **Publicações** passam por aprovação antes de aparecer. As suas (admin) entram direto, em destaque, como "Da cozinha".
+- **Opiniões** aparecem na hora. Qualquer pessoa logada pode denunciar uma opinião, e você decide em **Moderar** se ela é ocultada ou mantida.
+- **Limites contra spam:** cada pessoa pode enviar 3 publicações e 30 opiniões por dia. Um campo-isca invisível barra robôs.
+- **Minha conta:** cada pessoa muda o próprio nome, acompanha as próprias publicações e pode apagar a conta com tudo o que escreveu.
+- **Privacidade:** o site guarda só nome, e-mail (nunca exibido) e o que a pessoa escreve. A foto da conta Google não é guardada nem carregada. A página `/privacidade` tem um espaço `[E-MAIL DE CONTATO — preencher]` para você completar.
+
+Toda a segurança está no banco. As regras de acesso (RLS) ficam em `supabase/migrations/0001_caderno_da_cozinha.sql` e são testadas com `npm run testar`.
+
+### Ligar o Caderno (só uma vez)
+
+**1. Criar o banco no Supabase**
+
+1. Crie uma conta e um projeto em [supabase.com](https://supabase.com). O plano gratuito basta.
+2. No projeto, abra **SQL Editor → New query**, cole todo o conteúdo de `supabase/migrations/0001_caderno_da_cozinha.sql` e clique em **Run**.
+
+**2. Ativar o login com Google**
+
+1. No [Google Cloud Console](https://console.cloud.google.com/apis/credentials), crie um projeto. Em **Credenciais → Criar credenciais → ID do cliente OAuth**, escolha **Aplicativo da Web**.
+   - Em **URIs de redirecionamento autorizados**, coloque `https://SEU-PROJETO.supabase.co/auth/v1/callback`. O endereço exato aparece no Supabase, no item seguinte.
+   - Configure também a **Tela de consentimento OAuth** com o nome "La cucina brasiliana".
+2. No Supabase, em **Authentication → Sign In / Providers → Google**, ative o provedor e cole o **Client ID** e o **Client Secret** gerados pelo Google.
+3. Ainda no Supabase, em **Authentication → URL Configuration**:
+   - **Site URL:** o endereço final do site (ex.: `https://lacucinabrasiliana.vercel.app`).
+   - **Redirect URLs:** acrescente `https://SEU-DOMINIO/api/auth/retorno` e, para testar no computador, `http://localhost:4321/api/auth/retorno`.
+
+**3. Ligar o site ao banco**
+
+No Supabase, em **Project Settings → API**, copie a **Project URL** e a chave **anon public**. No computador, copie `.env.example` para `.env` e preencha:
+
+```bash
+SUPABASE_URL=https://SEU-PROJETO.supabase.co
+SUPABASE_ANON_KEY=sua-chave-anon
+```
+
+A chave `anon` pode ficar no site, porque quem protege os dados são as regras do banco. **Nunca** use a chave `service_role` aqui.
+
+**4. Virar admin**
+
+Entre no site com a sua conta Google uma vez. Depois, no **SQL Editor** do Supabase, rode o comando abaixo, trocando o e-mail pelo seu:
+
+```sql
+update public.perfis set papel = 'admin'
+where id = (select id from auth.users where email = 'seu-email@gmail.com');
+```
+
+Pronto: o link **Moderar** aparece no Caderno, e as suas publicações entram direto como "Da cozinha".
+
+**Para desligar a aprovação prévia** (se o volume for baixo e você confiar em quem escreve), rode no SQL Editor:
+
+```sql
+alter table public.publicacoes alter column status set default 'aprovada';
+```
+
 ## Como publicar na Vercel
 
 1. Suba este repositório para o GitHub (ou GitLab/Bitbucket).
-2. Na [Vercel](https://vercel.com/new), clique em **Add New → Project** e importe o repositório.
-3. A Vercel reconhece o Astro sozinha. Confira só se está assim:
-   - **Framework Preset:** Astro
-   - **Build Command:** `npm run build`
-   - **Output Directory:** `dist`
-4. Em **Environment Variables**, crie `SITE_URL` com o endereço final do site (ex.: `https://lacucinabrasiliana.vercel.app` ou o seu domínio). Ele é usado nos links de compartilhamento.
-5. Clique em **Deploy**. A partir daí, cada `git push` na branch principal publica o site de novo.
+2. Na [Vercel](https://vercel.com/new), clique em **Add New → Project** e importe o repositório. A Vercel reconhece o Astro sozinha (**Framework Preset: Astro**). Não mexa no Build Command nem no Output Directory.
+3. Em **Environment Variables**, crie:
+   - `SITE_URL`: o endereço final do site (ex.: `https://lacucinabrasiliana.vercel.app` ou o seu domínio). É usado nos links de compartilhamento.
+   - `SUPABASE_URL` e `SUPABASE_ANON_KEY`: os mesmos valores do `.env`. Se preferir, a [integração do Supabase com a Vercel](https://vercel.com/marketplace/supabase) cria as duas sozinha.
+4. Clique em **Deploy**. A partir daí, cada `git push` na branch principal publica o site de novo.
+
+O cardápio, as receitas e a Sobre são servidos como arquivos estáticos. Só as páginas do Caderno rodam como função na Vercel.
 
 ## Organização
 
@@ -82,17 +141,29 @@ As seções do cardápio e a ordem delas ficam em `src/lib/categorias.ts`. Acres
 src/
 ├─ content/receitas/   uma receita por arquivo .md
 ├─ content.config.ts   o formato (schema) que cada receita precisa seguir
+├─ middleware.ts       identifica quem está logado nas páginas do Caderno
 ├─ lib/
 │  ├─ categorias.ts    seções do cardápio, em ordem
 │  ├─ receitas.ts      ordenação, agrupamento e anterior/próxima
-│  └─ simbolos.ts      os desenhos do ratinho, do raminho e do selo (SVG)
+│  ├─ simbolos.ts      os desenhos do ratinho, do raminho e do selo (SVG)
+│  ├─ supabase.ts      conexão com o banco, como a pessoa logada
+│  ├─ caderno.ts       tipos, limites e mensagens do Caderno
+│  └─ texto.ts         formatação segura do que as pessoas escrevem
 ├─ components/         Ratinho, Raminho, Selo, Separador, Moldura, cabeçalho e rodapé
+│  └─ caderno/         cartão do mural, assinatura, monograma e barra de sessão
 ├─ layouts/Base.astro  estrutura comum de todas as páginas
-├─ pages/              início, cardápio, receitas, sobre e 404
-└─ styles/global.css   cores, fontes e modo escuro
+├─ pages/
+│  ├─ index.astro      início + Caderno da cozinha
+│  ├─ caderno/         publicação (com opiniões) e escrever
+│  ├─ api/auth/        login com Google, retorno e sair
+│  └─ ...              cardápio, receitas, sobre, entrar, conta, moderar, privacidade e 404
+└─ styles/global.css   cores, fontes, formulários e modo escuro
 scripts/gerar-imagens.mjs  gera favicon e imagem Open Graph a partir do selo
+supabase/migrations/       o banco do Caderno (tabelas e regras de acesso)
+supabase/testes/           testes das regras de acesso, num Postgres em memória
+tests/                     testes da formatação de texto
 ```
 
-As cores ficam em variáveis no topo de `src/styles/global.css`. O modo escuro segue a preferência do sistema de quem visita.
+As cores ficam em variáveis no topo de `src/styles/global.css`. O tema segue a preferência do sistema de quem visita e pode ser trocado no botão do cabeçalho.
 
 O favicon e a imagem de compartilhamento (`public/favicon.svg`, `favicon.png`, `apple-touch-icon.png` e `og.png`) já estão prontos. Só é preciso rodar `npm run imagens` de novo se o desenho do selo mudar.
