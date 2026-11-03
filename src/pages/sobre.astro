@@ -1,8 +1,13 @@
 ---
-import { Image } from 'astro:assets';
+import { getImage } from 'astro:assets';
 import Base from '../layouts/Base.astro';
 import Separador from '../components/Separador.astro';
 import ilustracaoMesa from '../assets/ilustracao-mesa.png';
+
+// O desenho é só tinta sobre fundo transparente: vira máscara e é pintado com a
+// cor de destaque, então acompanha o modo escuro sem uma segunda versão.
+const mascara = await getImage({ src: ilustracaoMesa, format: 'webp', width: 736 });
+const proporcao = `${ilustracaoMesa.width} / ${ilustracaoMesa.height}`;
 ---
 
 <Base titulo="Sobre" descricao="Sobre La cucina brasiliana, uma cozinha de hobby com base italiana.">
@@ -14,12 +19,13 @@ import ilustracaoMesa from '../assets/ilustracao-mesa.png';
     </header>
 
     <figure class="ilustracao">
-      <Image
-        src={ilustracaoMesa}
-        alt="Desenho a pincel, em azul-marinho, de duas pessoas sentadas à mesa de um café, com copos sobre a mesa e cadeiras de ferro."
-        widths={[360, 560, 736]}
-        sizes="(min-width: 40rem) 560px, 100vw"
-      />
+      <div
+        class="desenho"
+        role="img"
+        aria-label="Desenho a pincel de duas pessoas sentadas à mesa de um café, com copos sobre a mesa e cadeiras de ferro."
+        style={`--mascara: url('${mascara.src}'); aspect-ratio: ${proporcao}`}
+      >
+      </div>
     </figure>
 
     <div class="texto">
@@ -50,19 +56,12 @@ import ilustracaoMesa from '../assets/ilustracao-mesa.png';
     max-width: 35rem;
   }
 
-  .ilustracao :global(img) {
+  .desenho {
     width: 100%;
-    height: auto;
-    /* O papel do desenho some no creme da página. */
-    mix-blend-mode: multiply;
-  }
-
-  @media (prefers-color-scheme: dark) {
-    .ilustracao :global(img) {
-      mix-blend-mode: normal;
-      padding: 0.75rem;
-      background: var(--creme);
-    }
+    background-color: var(--cor-destaque);
+    -webkit-mask: var(--mascara) center / contain no-repeat;
+    mask: var(--mascara) center / contain no-repeat;
+    forced-color-adjust: none;
   }
 
   .texto {
