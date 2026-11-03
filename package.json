@@ -1,0 +1,23 @@
+{
+  "name": "la-cucina-brasiliana",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Site pessoal da cozinha La cucina brasiliana",
+  "type": "module",
+  "scripts": {
+    "dev": "astro dev",
+    "build": "astro build",
+    "preview": "astro preview",
+    "check": "astro check",
+    "gerar-og": "node scripts/gerar-og.mjs",
+    "astro": "astro"
+  },
+  "dependencies": {
+    "astro": "^7.4.5"
+  },
+  "devDependencies": {
+    "@astrojs/check": "^0.9.12",
+    "sharp": "^0.35.5",
+    "typescript": "^6.0.3"
+  }
+}
