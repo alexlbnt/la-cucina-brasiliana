@@ -11,12 +11,11 @@
 create table public.perfis (
   id uuid primary key references auth.users (id) on delete cascade,
   nome text not null check (char_length(nome) between 1 and 80),
-  avatar_url text,
   papel text not null default 'leitor' check (papel in ('leitor', 'admin')),
   criado_em timestamptz not null default now()
 );
 
-comment on table public.perfis is 'Nome público de quem escreve no caderno. Criado no primeiro login.';
+comment on table public.perfis is 'Nome público de quem escreve no caderno. Criado no primeiro login; não guarda e-mail nem foto.';
 
 -- Cria o perfil no primeiro login com Google, usando o nome da conta.
 create function public.criar_perfil()
@@ -26,15 +25,14 @@ security definer
 set search_path = ''
 as $$
 begin
-  insert into public.perfis (id, nome, avatar_url)
+  insert into public.perfis (id, nome)
   values (
     new.id,
     left(coalesce(
       nullif(trim(new.raw_user_meta_data ->> 'full_name'), ''),
       nullif(trim(new.raw_user_meta_data ->> 'name'), ''),
       split_part(new.email, '@', 1)
-    ), 80),
-    new.raw_user_meta_data ->> 'avatar_url'
+    ), 80)
   );
   return new;
 end;

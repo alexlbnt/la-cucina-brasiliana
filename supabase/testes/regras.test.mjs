@@ -79,7 +79,7 @@ after(async () => {
 
 describe('perfis', () => {
   test('nascem no primeiro login com o nome da conta Google', async () => {
-    const { rows } = await como('dono', 'select id, nome, avatar_url, papel from public.perfis order by id');
+    const { rows } = await como('dono', 'select id, nome, papel from public.perfis order by id');
     assert.deepEqual(
       rows.map((r) => [r.nome, r.papel]),
       [
@@ -88,7 +88,6 @@ describe('perfis', () => {
         ['Cozinheiro', 'admin'],
       ],
     );
-    assert.equal(rows[0].avatar_url, 'https://exemplo.com/a.png');
   });
 
   test('ninguém se promove a admin', async () => {
