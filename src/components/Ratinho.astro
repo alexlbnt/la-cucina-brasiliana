@@ -1,0 +1,42 @@
+---
+/**
+ * O ratinho da casa: sentado de perfil, cauda enrolada, segurando um raminho.
+ * Sem `titulo`, é decorativo (aria-hidden); com `titulo`, vira imagem acessível.
+ */
+import { RATINHO_VIEWBOX, tracosRatinho } from '../lib/simbolos';
+
+interface Props {
+  /** Largura em px (número) ou qualquer medida CSS. A altura segue a proporção. */
+  tamanho?: number | string;
+  cor?: string;
+  corRaminho?: string;
+  titulo?: string;
+  class?: string;
+}
+
+const {
+  tamanho = 64,
+  cor = 'var(--cor-destaque)',
+  corRaminho = 'var(--cor-rotulo)',
+  titulo,
+  class: classe,
+} = Astro.props;
+
+const largura = typeof tamanho === 'number' ? `${tamanho}px` : tamanho;
+const acessivel = titulo
+  ? { role: 'img', 'aria-label': titulo }
+  : { 'aria-hidden': 'true' as const, focusable: 'false' };
+---
+
+<svg
+  class:list={['ratinho', classe]}
+  viewBox={RATINHO_VIEWBOX}
+  fill="none"
+  stroke-linecap="round"
+  stroke-linejoin="round"
+  style={`width:${largura};height:auto`}
+  {...acessivel}
+>
+  {titulo && <title>{titulo}</title>}
+  <Fragment set:html={tracosRatinho(cor, corRaminho)} />
+</svg>

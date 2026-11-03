@@ -1,0 +1,31 @@
+---
+/** Espaço discreto no lugar da foto, enquanto o prato não tem uma. */
+import Ratinho from './Ratinho.astro';
+---
+
+<div class="foto-reservada">
+  <Ratinho tamanho={88} />
+  <p>Foto em breve</p>
+</div>
+
+<style>
+  .foto-reservada {
+    display: grid;
+    place-content: center;
+    justify-items: center;
+    gap: 0.5rem;
+    aspect-ratio: 16 / 7;
+    background: var(--cor-cartao);
+    border: 1px solid var(--cor-borda);
+  }
+
+  .foto-reservada :global(.ratinho) {
+    opacity: 0.55;
+  }
+
+  p {
+    font-style: italic;
+    font-size: 0.95rem;
+    color: var(--cor-texto-3);
+  }
+</style>

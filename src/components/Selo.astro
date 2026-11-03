@@ -1,0 +1,35 @@
+---
+/** O selo da casa: círculo duplo, nome correndo em volta e o ratinho no centro. */
+import { SELO_VIEWBOX, TEXTO_SELO, tracosSelo } from '../lib/simbolos';
+
+interface Props {
+  tamanho?: number | string;
+  cor?: string;
+  corRaminho?: string;
+  titulo?: string;
+  class?: string;
+}
+
+const {
+  tamanho = 320,
+  cor = 'var(--cor-destaque)',
+  corRaminho = 'var(--cor-rotulo)',
+  titulo = `Selo de La cucina brasiliana: um ratinho segurando um raminho de manjericão, cercado pelo texto “${TEXTO_SELO}”`,
+  class: classe,
+} = Astro.props;
+
+const largura = typeof tamanho === 'number' ? `${tamanho}px` : tamanho;
+// O textPath depende de um id; cada selo na página recebe o seu.
+const idCaminho = `selo-caminho-${Math.random().toString(36).slice(2, 8)}`;
+---
+
+<svg
+  class:list={['selo', classe]}
+  viewBox={SELO_VIEWBOX}
+  role="img"
+  aria-label={titulo}
+  style={`width:${largura};height:auto`}
+>
+  <title>{titulo}</title>
+  <Fragment set:html={tracosSelo(cor, corRaminho, idCaminho)} />
+</svg>

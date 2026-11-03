@@ -1,0 +1,27 @@
+---
+/** Moldura dupla de menu impresso: traço de 2px, 6px de respiro, traço de 1px. */
+interface Props {
+  as?: 'div' | 'article' | 'section';
+  class?: string;
+}
+
+const { as: Tag = 'div', class: classe } = Astro.props;
+---
+
+<Tag class:list={['moldura', classe]}>
+  <div class="moldura-interna">
+    <slot />
+  </div>
+</Tag>
+
+<style>
+  .moldura {
+    border: 2px solid var(--cor-destaque);
+    padding: 6px;
+  }
+
+  .moldura-interna {
+    border: 1px solid var(--cor-destaque);
+    padding: clamp(1.75rem, 6vw, 4.5rem) clamp(1.25rem, 6vw, 5rem);
+  }
+</style>

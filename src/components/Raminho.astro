@@ -1,0 +1,31 @@
+---
+/** Raminho de manjericão. Decorativo por padrão; passe `titulo` para anunciá-lo. */
+import { RAMINHO_VIEWBOX, tracosRaminho } from '../lib/simbolos';
+
+interface Props {
+  tamanho?: number | string;
+  cor?: string;
+  titulo?: string;
+  class?: string;
+}
+
+const { tamanho = 40, cor = 'var(--cor-rotulo)', titulo, class: classe } = Astro.props;
+
+const largura = typeof tamanho === 'number' ? `${tamanho}px` : tamanho;
+const acessivel = titulo
+  ? { role: 'img', 'aria-label': titulo }
+  : { 'aria-hidden': 'true' as const, focusable: 'false' };
+---
+
+<svg
+  class:list={['raminho', classe]}
+  viewBox={RAMINHO_VIEWBOX}
+  fill="none"
+  stroke-linecap="round"
+  stroke-linejoin="round"
+  style={`width:${largura};height:auto`}
+  {...acessivel}
+>
+  {titulo && <title>{titulo}</title>}
+  <Fragment set:html={tracosRaminho(cor)} />
+</svg>

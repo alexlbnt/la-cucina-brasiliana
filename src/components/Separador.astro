@@ -1,0 +1,32 @@
+---
+/** Duas linhas finas com o raminho de manjericão no meio. */
+import Raminho from './Raminho.astro';
+
+interface Props {
+  class?: string;
+}
+
+const { class: classe } = Astro.props;
+---
+
+<div class:list={['separador', classe]} aria-hidden="true">
+  <span class="linha"></span>
+  <Raminho tamanho={34} />
+  <span class="linha"></span>
+</div>
+
+<style>
+  .separador {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 1rem;
+  }
+
+  .linha {
+    width: min(9rem, 28%);
+    height: 1px;
+    background: var(--cor-destaque);
+    opacity: 0.85;
+  }
+</style>
