@@ -3,6 +3,7 @@ import Ratinho from './Ratinho.astro';
 
 const caminho = Astro.url.pathname.replace(/\/$/, '') || '/';
 const links = [
+  { href: '/', rotulo: 'Início', ativo: caminho === '/' || caminho.startsWith('/caderno') },
   { href: '/cardapio', rotulo: 'Cardápio', ativo: caminho === '/cardapio' || caminho.startsWith('/receitas') },
   { href: '/sobre', rotulo: 'Sobre', ativo: caminho === '/sobre' },
 ];

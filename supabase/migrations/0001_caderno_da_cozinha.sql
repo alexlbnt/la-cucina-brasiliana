@@ -155,7 +155,9 @@ create trigger marcar_publicacao
   before update of status on public.publicacoes
   for each row execute function public.marcar_publicacao();
 
--- Publicações de admin entram já aprovadas.
+-- Publicações de admin entram já aprovadas. Toda publicação que nasce aprovada
+-- ganha data de publicação; assim, para desligar a aprovação prévia basta:
+--   alter table public.publicacoes alter column status set default 'aprovada';
 create function public.aprovar_publicacao_de_admin()
 returns trigger
 language plpgsql
@@ -165,6 +167,8 @@ as $$
 begin
   if public.eh_admin() then
     new.status := 'aprovada';
+  end if;
+  if new.status = 'aprovada' then
     new.publicada_em := now();
   end if;
   return new;
