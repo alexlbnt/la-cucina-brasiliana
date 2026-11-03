@@ -23,6 +23,7 @@ Outros comandos:
 | `npm run check`   | confere os tipos e o frontmatter das receitas                    |
 | `npm run testar`  | roda os testes (formatação de texto e regras de acesso do banco) |
 | `npm run imagens` | refaz o favicon e a imagem de compartilhamento (veja abaixo)     |
+| `npm run esgabilado` | separa as artes do Esgabilado em máscaras (veja abaixo)       |
 
 ## Como adicionar uma receita
 
@@ -61,7 +62,7 @@ Dica: em YAML, textos com dois-pontos (`:`) ou apóstrofo (`'`) precisam ficar e
 
 ### Fotos
 
-Enquanto `foto` estiver vazio, a receita mostra um espaço reservado discreto com o ratinho. Para colocar uma foto, salve a imagem em `public/fotos/` (por exemplo `public/fotos/arroz.jpg`) e escreva `foto: /fotos/arroz.jpg`. Fotos horizontais funcionam melhor.
+Enquanto `foto` estiver vazio, a receita mostra um espaço reservado discreto com o Esgabilado. Para colocar uma foto, salve a imagem em `public/fotos/` (por exemplo `public/fotos/arroz.jpg`) e escreva `foto: /fotos/arroz.jpg`. Fotos horizontais funcionam melhor.
 
 ### Nova categoria
 
@@ -149,7 +150,8 @@ src/
 │  ├─ supabase.ts      conexão com o banco, como a pessoa logada
 │  ├─ caderno.ts       tipos, limites e mensagens do Caderno
 │  └─ texto.ts         formatação segura do que as pessoas escrevem
-├─ components/         Ratinho, Raminho, Selo, Separador, Moldura, cabeçalho e rodapé
+├─ assets/esgabilado/  as cenas do Esgabilado, já separadas em traço e folhas
+├─ components/         Ratinho, Esgabilado, Raminho, Selo, Separador, Moldura, cabeçalho e rodapé
 │  └─ caderno/         cartão do mural, assinatura, monograma e barra de sessão
 ├─ layouts/Base.astro  estrutura comum de todas as páginas
 ├─ pages/
@@ -158,7 +160,9 @@ src/
 │  ├─ api/auth/        login com Google, retorno e sair
 │  └─ ...              cardápio, receitas, sobre, entrar, conta, moderar, privacidade, termos e 404
 └─ styles/global.css   cores, fontes, formulários e modo escuro
+arte/esgabilado/           as artes originais do Esgabilado, sobre o creme
 scripts/gerar-imagens.mjs  gera favicon e imagem Open Graph a partir do selo
+scripts/separar-esgabilado.mjs  separa as artes do Esgabilado em máscaras
 supabase/migrations/       o banco do Caderno (tabelas e regras de acesso)
 supabase/testes/           testes das regras de acesso, num Postgres em memória
 tests/                     testes da formatação de texto
@@ -167,3 +171,5 @@ tests/                     testes da formatação de texto
 As cores ficam em variáveis no topo de `src/styles/global.css`. O tema segue a preferência do sistema de quem visita e pode ser trocado no botão do cabeçalho.
 
 O favicon e a imagem de compartilhamento (`public/favicon.svg`, `favicon.png`, `apple-touch-icon.png` e `og.png`) já estão prontos. Só é preciso rodar `npm run imagens` de novo se o desenho do selo mudar.
+
+O Esgabilado, o ratinho cozinheiro, aparece em cinco cenas: panela (Sobre), tigela (receitas sem foto), colher de pau (404), prato servido (topo do cardápio) e queijo com uvas (seção Acompanhamentos). As artes originais ficam em `arte/esgabilado/`. O script `npm run esgabilado` separa cada uma em duas máscaras transparentes, o traço e as folhas, que o site pinta com as cores do tema. Para trocar ou acrescentar uma cena, salve o PNG em `arte/esgabilado/` com o nome da cena, rode o script e acrescente o nome ao tipo `Cena` em `src/components/Esgabilado.astro`.

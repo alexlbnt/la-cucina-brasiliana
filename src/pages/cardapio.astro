@@ -2,15 +2,21 @@
 import Base from '../layouts/Base.astro';
 import Moldura from '../components/Moldura.astro';
 import Separador from '../components/Separador.astro';
+import Esgabilado from '../components/Esgabilado.astro';
+import type { Categoria } from '../lib/categorias';
 import { agruparPorCategoria, formatarNumero, listarReceitas, urlDaReceita } from '../lib/receitas';
 
 const secoes = agruparPorCategoria(await listarReceitas());
+
+/** Seções que ganham uma cena do Esgabilado ao lado do título. */
+const cenasDaSecao: Partial<Record<Categoria, 'queijo'>> = { Acompanhamentos: 'queijo' };
 ---
 
 <Base titulo="Cardápio" descricao="O cardápio de La cucina brasiliana: massas, arroz, peixes, acompanhamentos e ovos, do jeito que eu faço.">
   <div class="pagina">
     <Moldura>
       <header class="topo">
+        <Esgabilado cena="prato" tamanho="min(42vw, 170px)" />
         <p class="versalete rotulo">La cucina brasiliana</p>
         <h1>Cardápio</h1>
         <Separador />
@@ -20,11 +26,15 @@ const secoes = agruparPorCategoria(await listarReceitas());
       {
         secoes.map(({ categoria, receitas }) => {
           const idSecao = `secao-${categoria.toLowerCase()}`;
+          const cena = cenasDaSecao[categoria];
           return (
             <section class="secao" aria-labelledby={idSecao}>
-              <h2 id={idSecao} class="versalete">
-                {categoria}
-              </h2>
+              <div class="cabeca-secao">
+                <h2 id={idSecao} class="versalete">
+                  {categoria}
+                </h2>
+                {cena && <Esgabilado cena={cena} tamanho="clamp(5rem, 14vw, 7.5rem)" class="cena-secao" />}
+              </div>
               <ul class="pratos">
                 {receitas.map((receita) => (
                   <li class="prato">
@@ -77,9 +87,20 @@ const secoes = agruparPorCategoria(await listarReceitas());
     margin-top: clamp(1.75rem, 4vw, 2.5rem);
   }
 
+  .cabeca-secao {
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: 1rem;
+    margin-bottom: 0.5rem;
+  }
+
   h2 {
     color: var(--cor-destaque);
-    margin-bottom: 0.5rem;
+  }
+
+  .cabeca-secao :global(.cena-secao) {
+    flex-shrink: 0;
   }
 
   .pratos {

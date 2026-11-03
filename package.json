@@ -13,6 +13,7 @@
     "check": "astro check",
     "astro": "astro",
     "imagens": "node scripts/gerar-imagens.mjs",
+    "esgabilado": "node scripts/separar-esgabilado.mjs",
     "testar:banco": "node --test supabase/testes/*.test.mjs",
     "testar": "node --test tests/*.test.ts supabase/testes/*.test.mjs"
   },

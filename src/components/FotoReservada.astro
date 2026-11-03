@@ -1,10 +1,10 @@
 ---
 /** Espaço discreto no lugar da foto, enquanto o prato não tem uma. */
-import Ratinho from './Ratinho.astro';
+import Esgabilado from './Esgabilado.astro';
 ---
 
 <div class="foto-reservada">
-  <Ratinho tamanho={72} />
+  <Esgabilado cena="tigela" tamanho="clamp(4.5rem, 8vw, 6.5rem)" />
   <p>Foto em breve</p>
 </div>
 
@@ -19,7 +19,7 @@ import Ratinho from './Ratinho.astro';
     border: 1px solid var(--cor-borda);
   }
 
-  .foto-reservada :global(.ratinho) {
+  .foto-reservada :global(.esgabilado) {
     opacity: 0.55;
   }
 

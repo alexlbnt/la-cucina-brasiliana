@@ -1,0 +1,70 @@
+---
+/**
+ * O Esgabilado, o ratinho cozinheiro, em uma das cenas desenhadas.
+ * Cada cena vem em duas máscaras (traço e folhas), pintadas com as cores do tema;
+ * as máscaras saem de scripts/separar-esgabilado.mjs.
+ * Sem `titulo`, é decorativo (aria-hidden); com `titulo`, vira imagem acessível.
+ */
+import { getImage } from 'astro:assets';
+import type { ImageMetadata } from 'astro';
+
+const mascaras = import.meta.glob<{ default: ImageMetadata }>('../assets/esgabilado/*.png', { eager: true });
+
+type Cena = 'panela' | 'tigela' | 'colher' | 'prato' | 'queijo';
+
+interface Props {
+  cena: Cena;
+  /** Largura em CSS (número vira px). A altura segue a proporção do desenho. */
+  tamanho?: number | string;
+  titulo?: string;
+  class?: string;
+}
+
+const { cena, tamanho = 200, titulo, class: classe } = Astro.props;
+
+const traco = mascaras[`../assets/esgabilado/${cena}-traco.png`].default;
+const folha = mascaras[`../assets/esgabilado/${cena}-folha.png`].default;
+const largura = typeof tamanho === 'number' ? `${tamanho}px` : tamanho;
+
+// Mesmo recorte nas duas máscaras: basta a medida do traço.
+const larguraGerada = Math.min(traco.width, 640);
+const [mascaraTraco, mascaraFolha] = await Promise.all(
+  [traco, folha].map((src) => getImage({ src, format: 'webp', width: larguraGerada })),
+);
+
+const acessivel = titulo ? { role: 'img' as const, 'aria-label': titulo } : { 'aria-hidden': 'true' as const };
+---
+
+<div
+  class:list={['esgabilado', classe]}
+  style={`width:${largura};aspect-ratio:${traco.width} / ${traco.height};--traco:url('${mascaraTraco.src}');--folha:url('${mascaraFolha.src}')`}
+  {...acessivel}
+>
+  <span class="camada traco"></span>
+  <span class="camada folha"></span>
+</div>
+
+<style>
+  .esgabilado {
+    position: relative;
+    max-width: 100%;
+    forced-color-adjust: none;
+  }
+
+  .camada {
+    position: absolute;
+    inset: 0;
+    -webkit-mask: var(--mascara) center / contain no-repeat;
+    mask: var(--mascara) center / contain no-repeat;
+  }
+
+  .traco {
+    --mascara: var(--traco);
+    background-color: var(--cor-destaque);
+  }
+
+  .folha {
+    --mascara: var(--folha);
+    background-color: var(--cor-rotulo);
+  }
+</style>

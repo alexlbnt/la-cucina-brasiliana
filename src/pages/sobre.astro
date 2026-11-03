@@ -2,6 +2,7 @@
 import { getImage } from 'astro:assets';
 import Base from '../layouts/Base.astro';
 import Separador from '../components/Separador.astro';
+import Esgabilado from '../components/Esgabilado.astro';
 import ilustracaoMesa from '../assets/ilustracao-mesa.png';
 
 // O desenho é só tinta sobre fundo transparente: vira máscara e é pintado com a
@@ -10,13 +11,40 @@ const mascara = await getImage({ src: ilustracaoMesa, format: 'webp', width: 736
 const proporcao = `${ilustracaoMesa.width} / ${ilustracaoMesa.height}`;
 ---
 
-<Base titulo="Sobre" descricao="Sobre La cucina brasiliana, uma cozinha de hobby com base italiana.">
+<Base
+  titulo="Sobre"
+  descricao="Pelas patas e pelo faro apurado do Esgabilado, o nosso ratinho gourmand: a união entre a gastronomia italiana e a brasileira."
+>
   <article class="sobre pagina">
     <header class="topo">
       <p class="versalete rotulo">La cucina brasiliana</p>
       <h1>Sobre</h1>
       <Separador />
     </header>
+
+    <div class="apresentacao">
+      <Esgabilado
+        cena="panela"
+        tamanho="min(55vw, 12rem)"
+        titulo="O Esgabilado, o ratinho cozinheiro, mexendo uma panela fumegante"
+      />
+      <div class="texto">
+        <p class="boas-vindas">Bem-vindos a La Cucina Brasiliana!</p>
+        <p>
+          Pelas patas e pelo faro apurado do Esgabilado, o nosso ratinho gourmand, este perfil nasce para
+          explorar a união perfeita entre a gastronomia italiana e a brasileira.
+        </p>
+      </div>
+    </div>
+
+    <div class="texto">
+      <p>Desenvolvido por dois entusiastas da culinária, aqui você vai encontrar:</p>
+      <ul class="encontrar">
+        <li>Análises técnicas sobre as criações autorais do Chef Alex.</li>
+        <li>Avaliações críticas e bastidores da Sous-Chef Gabi.</li>
+        <li>Pareceres sinceros sobre pratos e restaurantes da culinária local e internacional</li>
+      </ul>
+    </div>
 
     <figure class="ilustracao">
       <div
@@ -27,10 +55,6 @@ const proporcao = `${ilustracaoMesa.width} / ${ilustracaoMesa.height}`;
       >
       </div>
     </figure>
-
-    <div class="texto">
-      <p>[TEXTO SOBRE MIM — vou escrever depois]</p>
-    </div>
   </article>
 </Base>
 
@@ -49,6 +73,42 @@ const proporcao = `${ilustracaoMesa.width} / ${ilustracaoMesa.height}`;
   h1 {
     font-size: clamp(2.75rem, 2rem + 4vw, 4.5rem);
     line-height: 1;
+  }
+
+  /* Esgabilado ao lado das boas-vindas no desktop, em cima no celular */
+  .apresentacao {
+    display: grid;
+    justify-items: center;
+    gap: 1.5rem;
+    margin: clamp(2rem, 5vw, 3rem) auto clamp(1.5rem, 4vw, 2rem);
+    max-width: var(--largura-texto);
+  }
+
+  @media (min-width: 40rem) {
+    .apresentacao {
+      grid-template-columns: auto 1fr;
+      align-items: center;
+      gap: 2rem;
+    }
+  }
+
+  .boas-vindas {
+    font-family: var(--fonte-titulo);
+    font-size: clamp(1.5rem, 1.25rem + 1vw, 1.9rem);
+    line-height: 1.2;
+    color: var(--cor-destaque);
+  }
+
+  .encontrar {
+    display: grid;
+    gap: 0.6rem;
+    margin: 1rem 0 0;
+    padding-left: 1.25rem;
+  }
+
+  .encontrar li::marker {
+    content: '— ';
+    color: var(--cor-rotulo);
   }
 
   .ilustracao {

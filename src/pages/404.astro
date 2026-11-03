@@ -1,7 +1,7 @@
 ---
 import Base from '../layouts/Base.astro';
 import Moldura from '../components/Moldura.astro';
-import Ratinho from '../components/Ratinho.astro';
+import Esgabilado from '../components/Esgabilado.astro';
 
 // Renderizada na hora: assim as páginas do Caderno conseguem responder com
 // esta 404 (na Vercel, uma 404 estática não fica disponível para elas).
@@ -12,10 +12,14 @@ export const prerender = false;
   <div class="pagina">
     <Moldura>
       <div class="nao-encontrada">
-        <Ratinho tamanho="min(60vw, 220px)" titulo="O ratinho da casa, segurando um raminho de manjericão" />
+        <Esgabilado
+          cena="colher"
+          tamanho="min(60vw, 240px)"
+          titulo="O Esgabilado, o ratinho cozinheiro, provando o molho numa colher de pau"
+        />
         <p class="versalete rotulo">Erro 404</p>
         <h1>Esse prato não está no cardápio</h1>
-        <p class="texto">A página que você procurou não existe, ou ainda está no fogo.</p>
+        <p class="texto">A página que você procurou não existe, ou o Esgabilado ainda está provando.</p>
         <div class="acoes">
           <a class="botao" href="/cardapio">Ver o cardápio</a>
           <a class="versalete inicio" href="/">Voltar ao início</a>
