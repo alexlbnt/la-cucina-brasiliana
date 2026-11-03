@@ -136,40 +136,27 @@ const links = [
   :global(:root[data-tema='escuro']) .icone-sol {
     display: block;
   }
-
-  @media (prefers-color-scheme: dark) {
-    :global(:root:not([data-tema='claro'])) .icone-lua {
-      display: none;
-    }
-
-    :global(:root:not([data-tema='claro'])) .icone-sol {
-      display: block;
-    }
-  }
 </style>
 
 <script>
   const botao = document.querySelector<HTMLButtonElement>('.tema');
   const raiz = document.documentElement;
-  const sistemaEscuro = window.matchMedia('(prefers-color-scheme: dark)');
-
-  const temaAtual = () => raiz.dataset.tema ?? (sistemaEscuro.matches ? 'escuro' : 'claro');
 
   const atualizarBotao = () => {
-    botao?.setAttribute('aria-pressed', String(temaAtual() === 'escuro'));
+    botao?.setAttribute('aria-pressed', String(raiz.dataset.tema === 'escuro'));
   };
 
   botao?.addEventListener('click', () => {
-    const tema = temaAtual() === 'escuro' ? 'claro' : 'escuro';
+    const tema = raiz.dataset.tema === 'escuro' ? 'claro' : 'escuro';
     raiz.dataset.tema = tema;
-    const cor = tema === 'escuro' ? '#1F2D4D' : '#F6F0E4';
-    document.querySelectorAll('meta[name="theme-color"]').forEach((meta) => meta.setAttribute('content', cor));
+    document
+      .querySelector('meta[name="theme-color"]')
+      ?.setAttribute('content', tema === 'escuro' ? '#1F2D4D' : '#F6F0E4');
     try {
       localStorage.setItem('tema', tema);
     } catch {}
     atualizarBotao();
   });
 
-  sistemaEscuro.addEventListener('change', atualizarBotao);
   atualizarBotao();
 </script>
