@@ -75,7 +75,7 @@ O mural da página inicial. Qualquer pessoa lê. Para escrever ou opinar, é pre
 - **Opiniões** aparecem na hora. Qualquer pessoa logada pode denunciar uma opinião, e você decide em **Moderar** se ela é ocultada ou mantida.
 - **Limites contra spam:** cada pessoa pode enviar 3 publicações e 30 opiniões por dia. Um campo-isca invisível barra robôs.
 - **Minha conta:** cada pessoa muda o próprio nome, acompanha as próprias publicações e pode apagar a conta com tudo o que escreveu.
-- **Privacidade:** o site guarda só nome, e-mail (nunca exibido) e o que a pessoa escreve. A foto da conta Google não é guardada nem carregada. A página `/privacidade` tem um espaço `[E-MAIL DE CONTATO — preencher]` para você completar.
+- **Privacidade:** o site guarda só nome, e-mail (nunca exibido) e o que a pessoa escreve. A foto da conta Google não é guardada nem carregada. As páginas `/privacidade` e `/termos` trazem o e-mail de contato e a data de atualização no topo do arquivo; atualize os dois se algo mudar.
 
 Toda a segurança está no banco. As regras de acesso (RLS) ficam em `supabase/migrations/0001_caderno_da_cozinha.sql` e são testadas com `npm run testar`.
 
@@ -156,7 +156,7 @@ src/
 │  ├─ index.astro      início + Caderno da cozinha
 │  ├─ caderno/         publicação (com opiniões) e escrever
 │  ├─ api/auth/        login com Google, retorno e sair
-│  └─ ...              cardápio, receitas, sobre, entrar, conta, moderar, privacidade e 404
+│  └─ ...              cardápio, receitas, sobre, entrar, conta, moderar, privacidade, termos e 404
 └─ styles/global.css   cores, fontes, formulários e modo escuro
 scripts/gerar-imagens.mjs  gera favicon e imagem Open Graph a partir do selo
 supabase/migrations/       o banco do Caderno (tabelas e regras de acesso)

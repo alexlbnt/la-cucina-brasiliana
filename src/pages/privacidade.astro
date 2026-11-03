@@ -1,69 +1,133 @@
 ---
 import Base from '../layouts/Base.astro';
 import Separador from '../components/Separador.astro';
+
+const CONTATO = 'alexneto510@gmail.com';
+const ATUALIZADA_EM = '3 de novembro de 2026';
 ---
 
-<Base titulo="Privacidade" descricao="O que La cucina brasiliana guarda sobre quem escreve no Caderno da cozinha.">
+<Base
+  titulo="Política de privacidade"
+  descricao="Quais dados La cucina brasiliana coleta, como usa, onde guarda e como apagar."
+>
   <article class="privacidade pagina">
     <header class="topo">
       <p class="versalete rotulo">La cucina brasiliana</p>
-      <h1>Privacidade</h1>
+      <h1>Política de privacidade</h1>
       <Separador />
       <p class="frase">Uma cozinha de hobby, com o mínimo de dados possível.</p>
+      <p class="atualizada">Atualizada em {ATUALIZADA_EM}</p>
     </header>
+
+    <section>
+      <h2>Quem somos</h2>
+      <p>
+        La cucina brasiliana (<a href="https://la-cucina-brasiliana.vercel.app">la-cucina-brasiliana.vercel.app</a>) é
+        um site pessoal e sem fins lucrativos de receitas caseiras, com um mural aberto, o Caderno da cozinha, onde
+        visitantes podem escrever publicações e opiniões. O responsável pelo site e pelos dados descritos aqui pode ser
+        contatado em <a href={`mailto:${CONTATO}`}>{CONTATO}</a>.
+      </p>
+    </section>
 
     <section>
       <h2>Quem só visita</h2>
       <p>
-        Ler o cardápio, as receitas e o Caderno da cozinha não exige conta. Não usamos ferramentas de análise,
-        anúncios nem cookies de terceiros.
+        Ler o cardápio, as receitas e o Caderno da cozinha não exige conta e não coleta nenhum dado pessoal. Não usamos
+        ferramentas de análise, anúncios, pixels de rastreamento nem cookies de terceiros.
       </p>
     </section>
 
     <section>
-      <h2>Quem entra com Google</h2>
-      <p>Para escrever e opinar, você entra com sua conta Google. A partir daí guardamos:</p>
+      <h2>Dados que recebemos do Google</h2>
+      <p>
+        Para escrever e opinar no Caderno, você entra com sua conta Google. Pedimos ao Google apenas o acesso básico de
+        identificação (<em>openid</em>, <em>email</em> e <em>profile</em>), e recebemos:
+      </p>
       <ul>
-        <li>
-          <strong>Seu nome</strong>, que aparece junto do que você escreve. Você pode mudá-lo em
-          <a href="/conta">Minha conta</a>.
-        </li>
-        <li>
-          <strong>Seu e-mail e o identificador da conta Google</strong>, usados só para o login. Eles nunca aparecem
-          no site.
-        </li>
-        <li><strong>O que você publica</strong>: publicações, opiniões e denúncias, com a data.</li>
+        <li><strong>Nome</strong> da conta Google;</li>
+        <li><strong>Endereço de e-mail</strong>;</li>
+        <li><strong>Identificador da conta Google</strong>, um código que o Google usa para reconhecer você no login.</li>
       </ul>
       <p>
-        Não guardamos sua foto da conta Google nem lemos nada além do que o Google envia no login (nome e
-        e-mail).
+        O Google também envia o endereço da foto do perfil, mas nós não a guardamos nem a exibimos. Não temos acesso à
+        sua senha, aos seus contatos, ao Gmail, ao Drive nem a nenhum outro dado da sua conta Google.
       </p>
     </section>
 
     <section>
-      <h2>Onde ficam os dados</h2>
+      <h2>Como usamos esses dados</h2>
+      <ul>
+        <li>
+          <strong>Nome:</strong> aparece publicamente junto do que você escreve no Caderno. Você pode trocá-lo a qualquer
+          momento em <a href="/conta">Minha conta</a>.
+        </li>
+        <li>
+          <strong>E-mail e identificador:</strong> servem só para fazer o login e saber quais publicações e opiniões são
+          suas. O e-mail nunca aparece no site e não é usado para enviar mensagens.
+        </li>
+        <li>
+          <strong>O que você escreve</strong> (publicações, opiniões e denúncias, com data e hora): fica guardado para ser
+          exibido no Caderno e para a moderação.
+        </li>
+      </ul>
       <p>
-        No <a href="https://supabase.com" rel="noopener">Supabase</a>, o serviço de banco de dados e login do site. O
-        site em si é servido pela <a href="https://vercel.com" rel="noopener">Vercel</a>.
+        Não vendemos, alugamos nem compartilhamos seus dados com ninguém para publicidade ou qualquer outro fim, e não os
+        usamos para treinar modelos de inteligência artificial.
+      </p>
+      <p>
+        O uso de informações recebidas das APIs do Google segue a
+        <a href="https://developers.google.com/terms/api-services-user-data-policy" rel="noopener"
+          >Política de Dados do Usuário dos Serviços de API do Google</a
+        >, incluindo os requisitos de uso limitado.
+      </p>
+    </section>
+
+    <section>
+      <h2>Onde os dados ficam</h2>
+      <p>
+        Os dados ficam no <a href="https://supabase.com/privacy" rel="noopener">Supabase</a>, o serviço de banco de dados
+        e login do site, em servidores nos Estados Unidos. O site é servido pela
+        <a href="https://vercel.com/legal/privacy-policy" rel="noopener">Vercel</a>. Os dois atuam apenas como
+        operadores, guardando e processando os dados em nosso nome. A comunicação com o site é sempre criptografada
+        (HTTPS).
       </p>
     </section>
 
     <section>
       <h2>Cookies</h2>
       <p>
-        Só um: o cookie de sessão, que mantém você conectado depois de entrar. Ele some quando você clica em
-        <strong>Sair</strong>. A escolha de tema claro ou escuro fica guardada no seu próprio navegador.
+        Usamos um único cookie, o de sessão, que mantém você conectado depois de entrar. Ele é apagado quando você
+        clica em <strong>Sair</strong>. A escolha entre tema claro e escuro fica guardada só no seu navegador.
+      </p>
+    </section>
+
+    <section>
+      <h2>Por quanto tempo guardamos</h2>
+      <p>
+        Enquanto sua conta existir. Quando você apaga a conta, seu perfil, suas publicações, suas opiniões e suas
+        denúncias são removidos na hora e de forma definitiva.
       </p>
     </section>
 
     <section>
       <h2>Seus direitos</h2>
       <p>
-        Você pode apagar a sua conta a qualquer momento em <a href="/conta">Minha conta</a>. Isso remove, na hora e
-        para sempre, seu perfil, suas publicações e suas opiniões. Para qualquer outra dúvida, escreva para
-        [E-MAIL DE CONTATO — preencher].
+        Pela Lei Geral de Proteção de Dados (LGPD), você pode ver, corrigir e apagar seus dados. No site, em
+        <a href="/conta">Minha conta</a>, você muda seu nome, vê suas publicações e apaga a conta inteira com um clique.
+        Também é possível revogar o acesso do site à sua conta Google em
+        <a href="https://myaccount.google.com/connections" rel="noopener">myaccount.google.com/connections</a>. Para
+        qualquer outro pedido ou dúvida, escreva para <a href={`mailto:${CONTATO}`}>{CONTATO}</a>.
       </p>
     </section>
+
+    <section>
+      <h2>Mudanças nesta política</h2>
+      <p>
+        Se esta política mudar, a nova versão será publicada nesta página, com a data do topo atualizada.
+      </p>
+    </section>
+
+    <p class="ver-tambem">Veja também os <a href="/termos">termos de uso do Caderno</a>.</p>
   </article>
 </Base>
 
@@ -81,8 +145,8 @@ import Separador from '../components/Separador.astro';
   }
 
   h1 {
-    font-size: clamp(2.5rem, 1.8rem + 3.5vw, 4rem);
-    line-height: 1;
+    font-size: clamp(2.25rem, 1.6rem + 3vw, 3.5rem);
+    line-height: 1.05;
   }
 
   .frase {
@@ -90,13 +154,27 @@ import Separador from '../components/Separador.astro';
     color: var(--cor-texto-2);
   }
 
-  section {
+  .atualizada {
+    font-size: 0.95rem;
+    color: var(--cor-texto-3);
+  }
+
+  section,
+  .ver-tambem {
     max-width: var(--largura-texto);
     margin-inline: auto;
   }
 
   section + section {
     margin-top: 2rem;
+  }
+
+  .ver-tambem {
+    margin-top: 2.5rem;
+    padding-top: 1.25rem;
+    border-top: 1px solid var(--cor-borda);
+    font-style: italic;
+    color: var(--cor-texto-2);
   }
 
   h2 {

@@ -1,0 +1,137 @@
+---
+import Base from '../layouts/Base.astro';
+import Separador from '../components/Separador.astro';
+
+const CONTATO = 'alexneto510@gmail.com';
+const ATUALIZADOS_EM = '3 de novembro de 2026';
+---
+
+<Base titulo="Termos de uso" descricao="As regras do Caderno da cozinha de La cucina brasiliana.">
+  <article class="termos pagina">
+    <header class="topo">
+      <p class="versalete rotulo">La cucina brasiliana</p>
+      <h1>Termos de uso</h1>
+      <Separador />
+      <p class="frase">Gentileza é o tempero da casa.</p>
+      <p class="atualizados">Atualizados em {ATUALIZADOS_EM}</p>
+    </header>
+
+    <section>
+      <h2>O site</h2>
+      <p>
+        La cucina brasiliana é um site pessoal e gratuito de receitas caseiras. As receitas são feitas "no olho", do
+        jeito que eu faço em casa: use como inspiração e ajuste ao seu gosto, à sua cozinha e às suas restrições
+        alimentares.
+      </p>
+    </section>
+
+    <section>
+      <h2>O Caderno da cozinha</h2>
+      <p>
+        Qualquer pessoa pode ler o Caderno. Para escrever publicações e opiniões, é preciso entrar com uma conta Google.
+        Ao escrever, você concorda em:
+      </p>
+      <ul>
+        <li>falar de cozinha: o que cozinhou, provou, trocou ou inventou;</li>
+        <li>tratar as outras pessoas com respeito, sem ofensas, ataques ou discriminação;</li>
+        <li>não publicar propaganda, links de venda, spam ou conteúdo ilegal;</li>
+        <li>não publicar dados pessoais de outras pessoas;</li>
+        <li>publicar só textos seus, ou que você tenha direito de compartilhar.</li>
+      </ul>
+    </section>
+
+    <section>
+      <h2>Moderação</h2>
+      <p>
+        As publicações passam por uma leitura antes de aparecer. Publicações e opiniões que não seguirem estas regras
+        podem ser recusadas, ocultadas ou apagadas, e contas que insistirem em descumpri-las podem ser removidas.
+        Qualquer pessoa logada pode denunciar uma opinião.
+      </p>
+    </section>
+
+    <section>
+      <h2>O que você escreve</h2>
+      <p>
+        O texto continua sendo seu. Ao publicar, você permite que ele seja exibido no site, junto do seu nome. Você pode
+        apagar suas publicações e opiniões a qualquer momento, ou apagar a conta inteira em
+        <a href="/conta">Minha conta</a>.
+      </p>
+    </section>
+
+    <section>
+      <h2>Responsabilidade</h2>
+      <p>
+        O site é mantido por hobby e oferecido como está, sem garantia de que estará sempre no ar. As opiniões
+        publicadas no Caderno são de quem as escreveu.
+      </p>
+    </section>
+
+    <section>
+      <h2>Contato</h2>
+      <p>
+        Dúvidas, pedidos ou denúncias: <a href={`mailto:${CONTATO}`}>{CONTATO}</a>. Para saber como tratamos seus dados,
+        veja a <a href="/privacidade">política de privacidade</a>.
+      </p>
+    </section>
+  </article>
+</Base>
+
+<style>
+  .termos {
+    max-width: 44rem;
+  }
+
+  .topo {
+    display: grid;
+    justify-items: center;
+    gap: 0.75rem;
+    margin-bottom: 2.5rem;
+    text-align: center;
+  }
+
+  h1 {
+    font-size: clamp(2.25rem, 1.6rem + 3vw, 3.5rem);
+    line-height: 1.05;
+  }
+
+  .frase {
+    font-style: italic;
+    color: var(--cor-texto-2);
+  }
+
+  .atualizados {
+    font-size: 0.95rem;
+    color: var(--cor-texto-3);
+  }
+
+  section {
+    max-width: var(--largura-texto);
+    margin-inline: auto;
+  }
+
+  section + section {
+    margin-top: 2rem;
+  }
+
+  h2 {
+    margin-bottom: 0.6rem;
+    font-size: 1.4rem;
+  }
+
+  p + ul {
+    margin-top: 0.75rem;
+  }
+
+  ul {
+    margin-bottom: 0;
+    padding-left: 1.2rem;
+  }
+
+  li + li {
+    margin-top: 0.4rem;
+  }
+
+  li::marker {
+    color: var(--cor-destaque);
+  }
+</style>
