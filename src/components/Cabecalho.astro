@@ -1,0 +1,87 @@
+---
+import Ratinho from './Ratinho.astro';
+
+const caminho = Astro.url.pathname.replace(/\/$/, '') || '/';
+const links = [
+  { href: '/cardapio', rotulo: 'Cardápio', ativo: caminho === '/cardapio' || caminho.startsWith('/receitas') },
+  { href: '/sobre', rotulo: 'Sobre', ativo: caminho === '/sobre' },
+];
+---
+
+<header class="cabecalho">
+  <a class="marca" href="/">
+    <Ratinho tamanho={52} />
+    <span class="versalete rotulo">La cucina brasiliana</span>
+    <span class="apenas-leitor">, página inicial</span>
+  </a>
+  <nav aria-label="Principal">
+    <ul>
+      {
+        links.map((link) => (
+          <li>
+            <a
+              class="versalete"
+              href={link.href}
+              aria-current={link.ativo ? (link.href === caminho ? 'page' : 'true') : undefined}
+            >
+              {link.rotulo}
+            </a>
+          </li>
+        ))
+      }
+    </ul>
+  </nav>
+</header>
+
+<style>
+  .cabecalho {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem 2rem;
+    width: 100%;
+    max-width: var(--largura-pagina);
+    margin-inline: auto;
+    padding: 1.25rem 1rem 1rem;
+    border-bottom: 1px solid var(--cor-borda);
+  }
+
+  @media (min-width: 40rem) {
+    .cabecalho {
+      padding-inline: var(--respiro);
+    }
+  }
+
+  .marca {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    text-decoration: none;
+  }
+
+  .marca .versalete {
+    letter-spacing: 0.32em;
+  }
+
+  ul {
+    display: flex;
+    gap: 1.75rem;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  nav a {
+    display: inline-block;
+    padding-block: 0.5rem;
+    color: var(--cor-destaque);
+    text-decoration: none;
+    border-bottom: 1px solid transparent;
+  }
+
+  nav a:hover,
+  nav a[aria-current] {
+    border-bottom-color: currentColor;
+  }
+</style>

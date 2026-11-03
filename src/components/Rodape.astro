@@ -1,0 +1,21 @@
+---
+import Ratinho from './Ratinho.astro';
+---
+
+<footer class="rodape">
+  <Ratinho tamanho={84} />
+  <p class="versalete">Buon appetito</p>
+</footer>
+
+<style>
+  .rodape {
+    display: grid;
+    justify-items: center;
+    gap: 0.75rem;
+    padding: 3rem 1rem 3.5rem;
+  }
+
+  p {
+    color: var(--cor-texto-3);
+  }
+</style>
