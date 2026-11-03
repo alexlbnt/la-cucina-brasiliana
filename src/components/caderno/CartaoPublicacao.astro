@@ -1,0 +1,99 @@
+---
+/** Uma publicação no mural: título, quem escreveu, prato e resumo. */
+import Assinatura from './Assinatura.astro';
+import type { PublicacaoNoMural } from '../../lib/caderno';
+import { resumir } from '../../lib/texto';
+
+interface Props {
+  publicacao: PublicacaoNoMural;
+  /** Título dos pratos do cardápio, por slug. */
+  pratos: Map<string, string>;
+  destaque?: boolean;
+}
+
+const { publicacao, pratos, destaque = false } = Astro.props;
+const prato = publicacao.prato_slug ? pratos.get(publicacao.prato_slug) : undefined;
+const totalOpinioes = publicacao.opinioes[0]?.count ?? 0;
+const url = `/caderno/${publicacao.id}`;
+---
+
+<article class:list={['cartao', { destaque }]}>
+  {prato && <p class="versalete prato">{prato}</p>}
+  <h3><a href={url}>{publicacao.titulo}</a></h3>
+  <Assinatura autor={publicacao.autor} data={publicacao.publicada_em ?? publicacao.criada_em} />
+  <p class="resumo">{resumir(publicacao.texto, destaque ? 360 : 220)}</p>
+  <p class="rodape-cartao">
+    <a class="botao-texto" href={url}>Ler</a>
+    <a class="opinioes" href={`${url}#opinioes`}>
+      {totalOpinioes === 0 ? 'Sem opiniões ainda' : totalOpinioes === 1 ? '1 opinião' : `${totalOpinioes} opiniões`}
+    </a>
+  </p>
+</article>
+
+<style>
+  .cartao {
+    display: grid;
+    gap: 0.85rem;
+    align-content: start;
+    padding: clamp(1.25rem, 4vw, 1.75rem);
+    background: var(--cor-cartao);
+    border: 1px solid var(--cor-borda);
+  }
+
+  .destaque {
+    border: 1px solid var(--cor-destaque);
+    outline: 1px solid var(--cor-destaque);
+    outline-offset: 4px;
+  }
+
+  .prato {
+    font-size: 0.75rem;
+    color: var(--cor-rotulo);
+  }
+
+  h3 {
+    font-size: clamp(1.35rem, 1.2rem + 0.6vw, 1.6rem);
+    color: var(--cor-texto);
+    text-wrap: pretty;
+  }
+
+  .destaque h3 {
+    font-size: clamp(1.6rem, 1.3rem + 1.2vw, 2.1rem);
+  }
+
+  h3 a {
+    color: inherit;
+    text-decoration: underline;
+    text-decoration-color: transparent;
+    transition: color 0.15s ease, text-decoration-color 0.15s ease;
+  }
+
+  h3 a:hover {
+    color: var(--cor-destaque);
+    text-decoration-color: currentColor;
+  }
+
+  .resumo {
+    color: var(--cor-texto-2);
+  }
+
+  .rodape-cartao {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 1rem;
+    padding-top: 0.6rem;
+    border-top: 1px solid var(--cor-borda);
+  }
+
+  .opinioes {
+    font-size: 0.95rem;
+    font-style: italic;
+    color: var(--cor-texto-3);
+    text-decoration: none;
+  }
+
+  .opinioes:hover {
+    color: var(--cor-destaque);
+  }
+</style>

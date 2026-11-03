@@ -50,9 +50,15 @@ export const LIMITES = {
 
 export const POR_PAGINA = 10;
 
-/** Colunas usadas no mural e na página da publicação. */
-export const COLUNAS_PUBLICACAO =
-  'id, autor_id, titulo, texto, prato_slug, status, criada_em, publicada_em, autor:perfis(nome, papel)';
+/**
+ * Colunas usadas no mural e na página da publicação. Com `autorObrigatorio`,
+ * o autor vira inner join, para filtrar pelo papel de quem escreveu.
+ */
+export function colunasPublicacao({ autorObrigatorio = false, comOpinioes = false } = {}): string {
+  const autor = `autor:perfis${autorObrigatorio ? '!inner' : ''}(nome, papel)`;
+  const opinioes = comOpinioes ? ', opinioes(count)' : '';
+  return `id, autor_id, titulo, texto, prato_slug, status, criada_em, publicada_em, ${autor}${opinioes}`;
+}
 
 const formatoData = new Intl.DateTimeFormat('pt-BR', {
   day: 'numeric',

@@ -211,6 +211,124 @@ a:hover {
   color: var(--cor-fundo);
 }
 
+button.botao {
+  background: none;
+  cursor: pointer;
+}
+
+/* Ação principal de um formulário: o botão já vem preenchido */
+.botao.cheio {
+  background: var(--cor-destaque);
+  color: var(--cor-fundo);
+}
+
+.botao.cheio:hover {
+  background: var(--cor-destaque-hover);
+  border-color: var(--cor-destaque-hover);
+}
+
+/* Ação discreta: parece um rótulo em versalete */
+.botao-texto {
+  display: inline-block;
+  padding: 0.35rem 0;
+  border: 0;
+  background: none;
+  color: var(--cor-destaque);
+  font-family: var(--fonte-texto);
+  font-size: 0.75rem;
+  font-weight: 500;
+  letter-spacing: 0.3em;
+  text-transform: uppercase;
+  text-decoration: underline;
+  text-decoration-color: transparent;
+  text-underline-offset: 0.3em;
+  cursor: pointer;
+  transition: text-decoration-color 0.15s ease;
+}
+
+.botao-texto:hover {
+  text-decoration-color: currentColor;
+}
+
+/* ---------- Formulários ---------- */
+
+.campo {
+  display: grid;
+  gap: 0.4rem;
+}
+
+.campo + .campo {
+  margin-top: 1.5rem;
+}
+
+.campo label {
+  font-size: 0.8125rem;
+  font-weight: 500;
+  letter-spacing: 0.3em;
+  text-transform: uppercase;
+  color: var(--cor-rotulo);
+}
+
+.campo input,
+.campo textarea,
+.campo select {
+  width: 100%;
+  padding: 0.7rem 0.85rem;
+  border: 1px solid var(--cor-borda);
+  border-bottom-color: var(--cor-destaque);
+  border-radius: 0;
+  background: var(--cor-cartao);
+  color: var(--cor-texto);
+  font: inherit;
+  line-height: 1.5;
+}
+
+.campo textarea {
+  min-height: 12rem;
+  resize: vertical;
+}
+
+.campo input:focus-visible,
+.campo textarea:focus-visible,
+.campo select:focus-visible {
+  outline: 2px solid var(--cor-destaque);
+  outline-offset: 0;
+}
+
+.campo .dica {
+  font-size: 0.95rem;
+  font-style: italic;
+  color: var(--cor-texto-3);
+}
+
+/* Campo-isca contra robôs: fora da tela, fora do teclado */
+.isca {
+  position: absolute;
+  left: -10000px;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+}
+
+/* Avisos curtos (sucesso, erro, informação) */
+.aviso {
+  padding: 0.85rem 1.1rem;
+  border: 1px solid var(--cor-borda);
+  border-left: 3px solid var(--cor-rotulo);
+  background: var(--cor-cartao);
+  color: var(--cor-texto-2);
+}
+
+.aviso.erro {
+  border-left-color: var(--cor-destaque);
+  color: var(--cor-texto);
+}
+
+/* Texto escrito pelas pessoas no Caderno */
+.texto-livre p + p {
+  margin-top: 1em;
+}
+
 /* Contêiner central da página */
 .pagina {
   width: 100%;

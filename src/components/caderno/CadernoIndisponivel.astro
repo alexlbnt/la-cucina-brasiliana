@@ -1,0 +1,21 @@
+---
+import Ratinho from '../Ratinho.astro';
+---
+
+<div class="indisponivel">
+  <Ratinho tamanho={96} />
+  <p>O Caderno da cozinha ainda está sendo preparado. Volte em breve!</p>
+</div>
+
+<style>
+  .indisponivel {
+    display: grid;
+    justify-items: center;
+    gap: 1rem;
+    padding: 2.5rem 1rem;
+    border: 1px dashed var(--cor-borda);
+    text-align: center;
+    font-style: italic;
+    color: var(--cor-texto-2);
+  }
+</style>

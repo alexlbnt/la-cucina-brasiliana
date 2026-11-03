@@ -2,44 +2,247 @@
 import Base from '../layouts/Base.astro';
 import Selo from '../components/Selo.astro';
 import Separador from '../components/Separador.astro';
+import BarraDoCaderno from '../components/caderno/BarraDoCaderno.astro';
+import CartaoPublicacao from '../components/caderno/CartaoPublicacao.astro';
+import CadernoIndisponivel from '../components/caderno/CadernoIndisponivel.astro';
+import { colunasPublicacao, POR_PAGINA, type PublicacaoNoMural } from '../lib/caderno';
+import { mapaDePratos } from '../lib/receitas';
+
+export const prerender = false;
+
+const { supabase, perfil } = Astro.locals;
+const pagina = Math.max(1, Number.parseInt(Astro.url.searchParams.get('pagina') ?? '1', 10) || 1);
+const pratos = await mapaDePratos();
+
+let destaque: PublicacaoNoMural | null = null;
+let publicacoes: PublicacaoNoMural[] = [];
+let total = 0;
+let falhou = false;
+
+if (supabase) {
+  // "Da cozinha": a publicação mais recente do cozinheiro. Aparece só na
+  // primeira página, mas sai do mural em todas, para a paginação não repetir.
+  const { data: doCozinheiro } = await supabase
+    .from('publicacoes')
+    .select(colunasPublicacao({ autorObrigatorio: true, comOpinioes: true }))
+    .eq('status', 'aprovada')
+    .eq('autor.papel', 'admin')
+    .order('publicada_em', { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  destaque = (doCozinheiro as PublicacaoNoMural | null) ?? null;
+
+  let consulta = supabase
+    .from('publicacoes')
+    .select(colunasPublicacao({ comOpinioes: true }), { count: 'exact' })
+    .eq('status', 'aprovada')
+    .order('publicada_em', { ascending: false })
+    .range((pagina - 1) * POR_PAGINA, pagina * POR_PAGINA - 1);
+  if (destaque) consulta = consulta.neq('id', destaque.id);
+
+  const { data, count, error } = await consulta;
+  falhou = Boolean(error);
+  publicacoes = (data as PublicacaoNoMural[] | null) ?? [];
+  total = count ?? 0;
+}
+
+const temMais = pagina * POR_PAGINA < total;
+const contaApagada = Astro.url.searchParams.get('conta') === 'apagada';
+const escrever = perfil ? '/caderno/escrever' : `/entrar?proximo=${encodeURIComponent('/caderno/escrever')}`;
 ---
 
 <Base>
-  <section class="inicio pagina" aria-labelledby="titulo-inicio">
-    <Selo tamanho="min(78vw, 380px)" class="selo-inicio" />
-    <h1 id="titulo-inicio">La cucina brasiliana</h1>
-    <Separador />
-    <p class="frase">Base italiana, ingredientes simples e espaço para improvisar</p>
-    <a class="botao" href="/cardapio">Ver o cardápio</a>
-  </section>
+  <div class="pagina">
+    <section class="abertura" aria-labelledby="titulo-inicio">
+      <Selo tamanho="min(46vw, 210px)" class="selo-abertura" />
+      <div class="apresentacao">
+        <h1 id="titulo-inicio">La cucina brasiliana</h1>
+        <p class="frase">Base italiana, ingredientes simples e espaço para improvisar</p>
+        <a class="botao" href="/cardapio">Ver o cardápio</a>
+      </div>
+    </section>
+
+    <section class="caderno" aria-labelledby="titulo-caderno">
+      <header class="topo-caderno">
+        <p class="versalete rotulo">Conversa de cozinha</p>
+        <h2 id="titulo-caderno">Caderno da cozinha</h2>
+        <Separador />
+        <p class="frase">Quem cozinhou, provou ou inventou alguma coisa escreve aqui.</p>
+      </header>
+
+      {
+        !supabase ? (
+          <CadernoIndisponivel />
+        ) : (
+          <>
+            <BarraDoCaderno proximo="/" />
+
+            {contaApagada && (
+              <p class="aviso" role="status">
+                Sua conta e tudo o que você escreveu foram apagados. Volte sempre!
+              </p>
+            )}
+
+            <p class="acao-escrever">
+              <a class="botao cheio" href={escrever}>
+                Escrever no caderno
+              </a>
+            </p>
+
+            {falhou && (
+              <p class="aviso erro" role="alert">
+                Não foi possível carregar o caderno agora. Tente de novo em instantes.
+              </p>
+            )}
+
+            {destaque && pagina === 1 && (
+              <div class="da-cozinha">
+                <h3 class="versalete rotulo">Da cozinha</h3>
+                <CartaoPublicacao publicacao={destaque} pratos={pratos} destaque />
+              </div>
+            )}
+
+            {publicacoes.length > 0 ? (
+              <ul class="mural" aria-label="Publicações do caderno">
+                {publicacoes.map((publicacao) => (
+                  <li>
+                    <CartaoPublicacao publicacao={publicacao} pratos={pratos} />
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              !(destaque && pagina === 1) &&
+              !falhou && (
+                <p class="vazio">
+                  O caderno ainda está em branco. Que tal ser a primeira pessoa a escrever?
+                </p>
+              )
+            )}
+
+            {(pagina > 1 || temMais) && (
+              <nav class="paginas" aria-label="Páginas do caderno">
+                {pagina > 1 ? (
+                  <a class="botao-texto" href={pagina === 2 ? '/' : `/?pagina=${pagina - 1}`} rel="prev">
+                    ← Mais recentes
+                  </a>
+                ) : (
+                  <span />
+                )}
+                {temMais && (
+                  <a class="botao-texto" href={`/?pagina=${pagina + 1}`} rel="next">
+                    Publicações anteriores →
+                  </a>
+                )}
+              </nav>
+            )}
+          </>
+        )
+      }
+    </section>
+  </div>
 </Base>
 
 <style>
-  .inicio {
+  /* Abertura compacta: selo ao lado do nome no desktop, empilhado no celular */
+  .abertura {
     display: grid;
     justify-items: center;
     gap: 1.5rem;
     text-align: center;
-    padding-block: clamp(2rem, 7vw, 4.5rem) clamp(1rem, 4vw, 2rem);
+    padding-bottom: clamp(2.5rem, 7vw, 4rem);
   }
 
-  .inicio :global(.selo-inicio) {
-    margin-bottom: 0.5rem;
+  @media (min-width: 48rem) {
+    .abertura {
+      grid-template-columns: auto 1fr;
+      align-items: center;
+      justify-items: start;
+      gap: clamp(2rem, 5vw, 3.5rem);
+      max-width: 52rem;
+      margin-inline: auto;
+      text-align: left;
+    }
+  }
+
+  .apresentacao {
+    display: grid;
+    justify-items: inherit;
+    gap: 1rem;
   }
 
   h1 {
-    font-size: clamp(2.5rem, 1.6rem + 4.5vw, 4.5rem);
+    font-size: clamp(2.25rem, 1.5rem + 3.5vw, 3.75rem);
     letter-spacing: -0.01em;
   }
 
   .frase {
-    max-width: 26ch;
-    font-size: clamp(1.25rem, 1.1rem + 0.6vw, 1.5rem);
+    font-size: clamp(1.15rem, 1.05rem + 0.4vw, 1.35rem);
     font-style: italic;
     color: var(--cor-texto-2);
   }
 
-  .botao {
-    margin-top: 0.75rem;
+  .apresentacao .botao {
+    margin-top: 0.5rem;
+  }
+
+  /* Caderno */
+  .caderno {
+    display: grid;
+    gap: 1.75rem;
+    max-width: 52rem;
+    margin-inline: auto;
+  }
+
+  .topo-caderno {
+    display: grid;
+    justify-items: center;
+    gap: 0.75rem;
+    text-align: center;
+  }
+
+  h2 {
+    font-size: clamp(2.25rem, 1.6rem + 3vw, 3.5rem);
+  }
+
+  .acao-escrever {
+    text-align: center;
+  }
+
+  .da-cozinha {
+    display: grid;
+    gap: 0.75rem;
+  }
+
+  .da-cozinha h3 {
+    font-family: var(--fonte-texto);
+    font-weight: 500;
+  }
+
+  .mural {
+    display: grid;
+    gap: 1.25rem;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  @media (min-width: 48rem) {
+    .mural {
+      grid-template-columns: 1fr 1fr;
+    }
+  }
+
+  .vazio {
+    padding: 2rem 1rem;
+    border: 1px dashed var(--cor-borda);
+    text-align: center;
+    font-style: italic;
+    color: var(--cor-texto-2);
+  }
+
+  .paginas {
+    display: flex;
+    justify-content: space-between;
+    gap: 1rem;
   }
 </style>

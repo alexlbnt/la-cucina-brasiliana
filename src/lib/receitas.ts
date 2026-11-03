@@ -38,3 +38,9 @@ export function formatarNumero(numero: number): string {
 export function urlDaReceita(receita: Receita): string {
   return `/receitas/${receita.id}`;
 }
+
+/** slug → título, para mostrar o prato ligado a uma publicação do Caderno. */
+export async function mapaDePratos(): Promise<Map<string, string>> {
+  const receitas = await listarReceitas();
+  return new Map(receitas.map((receita) => [receita.id, receita.data.titulo]));
+}

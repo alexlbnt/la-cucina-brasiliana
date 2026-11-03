@@ -1,0 +1,60 @@
+---
+/** Quem escreveu e quando, com a marca "do cozinheiro" para o admin. */
+import Monograma from './Monograma.astro';
+import Ratinho from '../Ratinho.astro';
+import { formatarData, type Autor } from '../../lib/caderno';
+
+interface Props {
+  autor: Autor | null;
+  data: string;
+  tamanho?: number;
+}
+
+const { autor, data, tamanho = 36 } = Astro.props;
+const nome = autor?.nome ?? 'Conta apagada';
+const doCozinheiro = autor?.papel === 'admin';
+---
+
+<p class="assinatura">
+  {doCozinheiro ? <Ratinho tamanho={tamanho} /> : <Monograma nome={nome} tamanho={tamanho} />}
+  <span class="quem">
+    <span class="nome">{nome}</span>
+    {doCozinheiro && <span class="versalete selo-cozinheiro">do cozinheiro</span>}
+    <time datetime={data}>{formatarData(data)}</time>
+  </span>
+</p>
+
+<style>
+  .assinatura {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    text-align: left;
+  }
+
+  .quem {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    column-gap: 0.75rem;
+    line-height: 1.3;
+  }
+
+  .nome {
+    font-weight: 500;
+    color: var(--cor-texto);
+  }
+
+  .selo-cozinheiro {
+    font-size: 0.6875rem;
+    letter-spacing: 0.3em;
+    color: var(--cor-rotulo);
+  }
+
+  time {
+    flex-basis: 100%;
+    font-size: 0.95rem;
+    font-style: italic;
+    color: var(--cor-texto-3);
+  }
+</style>

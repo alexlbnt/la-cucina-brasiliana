@@ -1,0 +1,76 @@
+---
+/** Situação da sessão no topo do Caderno: entrar, ou conta / moderar / sair. */
+interface Props {
+  /** Para onde voltar depois do login. */
+  proximo?: string;
+}
+
+const { proximo = Astro.url.pathname } = Astro.props;
+const { perfil } = Astro.locals;
+---
+
+<div class="barra">
+  {
+    perfil ? (
+      <>
+        <p>
+          Você entrou como <strong>{perfil.nome}</strong>.
+        </p>
+        <ul>
+          <li>
+            <a class="botao-texto" href="/conta">Minha conta</a>
+          </li>
+          {perfil.papel === 'admin' && (
+            <li>
+              <a class="botao-texto" href="/moderar">Moderar</a>
+            </li>
+          )}
+          <li>
+            <form method="post" action="/api/auth/sair">
+              <button class="botao-texto" type="submit">Sair</button>
+            </form>
+          </li>
+        </ul>
+      </>
+    ) : (
+      <>
+        <p>Entre com sua conta Google para escrever e opinar.</p>
+        <ul>
+          <li>
+            <a class="botao-texto" href={`/entrar?proximo=${encodeURIComponent(proximo)}`}>
+              Entrar
+            </a>
+          </li>
+        </ul>
+      </>
+    )
+  }
+</div>
+
+<style>
+  .barra {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.25rem 1.5rem;
+    padding: 0.6rem 0;
+    border-block: 1px solid var(--cor-borda);
+    font-size: 1rem;
+    color: var(--cor-texto-2);
+  }
+
+  strong {
+    font-weight: 500;
+    color: var(--cor-texto);
+  }
+
+  ul {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0 1.5rem;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+</style>
