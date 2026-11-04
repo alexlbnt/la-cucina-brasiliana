@@ -69,7 +69,7 @@ if (Astro.request.method === 'POST') {
   }
 }
 
-const [{ data }, { data: desde }, { count: totalOpinioes }] = await Promise.all([
+const [{ data }, { data: desde }, { count: totalOpinioes }, { count: recebidas }] = await Promise.all([
   supabase
     .from('publicacoes')
     .select('id, titulo, status, criada_em')
@@ -77,6 +77,12 @@ const [{ data }, { data: desde }, { count: totalOpinioes }] = await Promise.all(
     .order('criada_em', { ascending: false }),
   supabase.from('perfis').select('criado_em').eq('id', perfil.id).maybeSingle(),
   supabase.from('opinioes').select('id', { count: 'exact', head: true }).eq('autor_id', perfil.id),
+  // Opiniões de outras pessoas nas suas publicações.
+  supabase
+    .from('opinioes')
+    .select('id, publicacao:publicacoes!inner(autor_id)', { count: 'exact', head: true })
+    .eq('publicacao.autor_id', perfil.id)
+    .neq('autor_id', perfil.id),
 ]);
 
 const minhas = (data ?? []) as { id: string; titulo: string; status: StatusPublicacao; criada_em: string }[];
@@ -86,9 +92,9 @@ const ROTULO_STATUS: Record<StatusPublicacao, string> = {
   recusada: 'Recusada',
 };
 const numeros = [
-  { valor: minhas.filter((p) => p.status === 'aprovada').length, rotulo: ['no caderno', 'no caderno'] },
-  { valor: minhas.filter((p) => p.status === 'pendente').length, rotulo: ['aguardando', 'aguardando'] },
-  { valor: totalOpinioes ?? 0, rotulo: ['opinião', 'opiniões'] },
+  { valor: minhas.filter((p) => p.status === 'aprovada').length, rotulo: ['publicação', 'publicações'] },
+  { valor: recebidas ?? 0, rotulo: ['opinião recebida', 'opiniões recebidas'] },
+  { valor: totalOpinioes ?? 0, rotulo: ['opinião deixada', 'opiniões deixadas'] },
 ];
 const criadoEm = (desde as { criado_em: string } | null)?.criado_em;
 const ehAdmin = perfil.papel === 'admin';

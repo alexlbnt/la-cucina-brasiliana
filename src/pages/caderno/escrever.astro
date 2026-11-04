@@ -15,7 +15,6 @@ if (!perfil) return Astro.redirect(`/entrar?proximo=${encodeURIComponent(Astro.u
 
 const receitas = await listarReceitas();
 const slugs = new Set(receitas.map((r) => r.id));
-const ehAdmin = perfil.papel === 'admin';
 
 let titulo = '';
 let texto = '';
@@ -70,14 +69,6 @@ if (Astro.request.method === 'POST') {
         </div>
 
         {erro && <p class="aviso erro" role="alert">{erro}</p>}
-
-        {
-          !ehAdmin && (
-            <p class="aviso">
-              Toda publicação passa por uma leitura antes de aparecer no caderno. Costuma ser rápido!
-            </p>
-          )
-        }
 
         <div class="acoes">
           <button class="botao cheio" type="submit">Enviar publicação</button>

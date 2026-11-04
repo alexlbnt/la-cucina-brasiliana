@@ -98,41 +98,38 @@ const ok = MENSAGENS[Astro.url.searchParams.get('ok') ?? ''];
     {ok && <p class="aviso" role="status">{ok}</p>}
     {deuErro && <p class="aviso erro" role="alert">Não deu certo desta vez. Tente de novo.</p>}
 
-    <section aria-labelledby="titulo-pendentes">
-      <h2 id="titulo-pendentes">
-        Publicações esperando leitura <span class="contagem">({pendentes.length})</span>
-      </h2>
-      {
-        pendentes.length === 0 ? (
-          <p class="vazio">Nada na fila. Tudo em dia!</p>
-        ) : (
-          <ol class="fila">
-            {pendentes.map((p) => {
-              const prato = p.prato_slug ? pratos.get(p.prato_slug) : undefined;
-              return (
-                <li class="item">
-                  {prato && <p class="versalete rotulo prato">{prato}</p>}
-                  <h3>
-                    <a href={`/caderno/${p.id}`}>{p.titulo}</a>
-                  </h3>
-                  <Assinatura autor={p.autor} data={p.criada_em} />
-                  <div class="texto-livre" set:html={formatarTexto(p.texto)} />
-                  <form method="post" class="acoes">
-                    <input type="hidden" name="alvo" value={p.id} />
-                    <button class="botao cheio" type="submit" name="acao" value="aprovar">
-                      Aprovar
-                    </button>
-                    <button class="botao" type="submit" name="acao" value="recusar">
-                      Recusar
-                    </button>
-                  </form>
-                </li>
-              );
-            })}
-          </ol>
-        )
-      }
-    </section>
+    {/* As publicações entram direto no caderno; esta fila só aparece se alguma ficar pendente. */}
+    {pendentes.length > 0 && (
+      <section aria-labelledby="titulo-pendentes">
+        <h2 id="titulo-pendentes">
+          Publicações esperando leitura <span class="contagem">({pendentes.length})</span>
+        </h2>
+        <ol class="fila">
+          {pendentes.map((p) => {
+            const prato = p.prato_slug ? pratos.get(p.prato_slug) : undefined;
+            return (
+              <li class="item">
+                {prato && <p class="versalete rotulo prato">{prato}</p>}
+                <h3>
+                  <a href={`/caderno/${p.id}`}>{p.titulo}</a>
+                </h3>
+                <Assinatura autor={p.autor} data={p.criada_em} />
+                <div class="texto-livre" set:html={formatarTexto(p.texto)} />
+                <form method="post" class="acoes">
+                  <input type="hidden" name="alvo" value={p.id} />
+                  <button class="botao cheio" type="submit" name="acao" value="aprovar">
+                    Aprovar
+                  </button>
+                  <button class="botao" type="submit" name="acao" value="recusar">
+                    Recusar
+                  </button>
+                </form>
+              </li>
+            );
+          })}
+        </ol>
+      </section>
+    )}
 
     <section aria-labelledby="titulo-denuncias">
       <h2 id="titulo-denuncias">

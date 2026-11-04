@@ -72,8 +72,8 @@ As seções do cardápio e a ordem delas ficam em `src/lib/categorias.ts`. Acres
 
 O mural da página inicial. Qualquer pessoa lê. Para escrever ou opinar, é preciso entrar com Google.
 
-- **Publicações** passam por aprovação antes de aparecer. As suas (admin) entram direto, em destaque, como "Da cozinha".
-- **Editar:** quem escreveu pode editar a própria publicação. Se for de leitor e já estiver aprovada, ela volta para a aprovação até você ler a edição; as suas continuam no ar. A publicação ganha a marca "Editada em".
+- **Publicações** entram no caderno na hora, sem aprovação prévia. As suas (admin) aparecem em destaque, como "Da cozinha". Você pode apagar qualquer publicação pela página dela.
+- **Editar:** quem escreveu pode editar a própria publicação, que continua no ar e ganha a marca "Editada em".
 - **Opiniões** aparecem na hora. Qualquer pessoa logada pode denunciar uma opinião, e você decide em **Moderar** se ela é ocultada ou mantida.
 - **Limites contra spam:** cada pessoa pode enviar 3 publicações e 30 opiniões por dia. Um campo-isca invisível barra robôs.
 - **Minha conta:** cada pessoa muda o próprio nome, escolhe um dos 10 retratos do Esgabilado (desenhados em SVG em `src/lib/retratos.ts`; sem escolha, aparecem as iniciais), acompanha as próprias publicações e pode apagar a conta com tudo o que escreveu.
@@ -86,7 +86,7 @@ Toda a segurança está no banco. As regras de acesso (RLS) ficam em `supabase/m
 **1. Criar o banco no Supabase**
 
 1. Crie uma conta e um projeto em [supabase.com](https://supabase.com). O plano gratuito basta.
-2. No projeto, abra **SQL Editor → New query**, cole todo o conteúdo de `supabase/migrations/0001_caderno_da_cozinha.sql` e clique em **Run**. Depois, numa nova query, faça o mesmo com `0002_retrato_do_perfil.sql` e depois com `0003_editar_publicacao.sql` (os arquivos rodam em ordem, cada um uma vez só).
+2. No projeto, abra **SQL Editor → New query**, cole todo o conteúdo de `supabase/migrations/0001_caderno_da_cozinha.sql` e clique em **Run**. Depois, numa nova query, faça o mesmo com `0002_retrato_do_perfil.sql` depois `0003_editar_publicacao.sql` e `0004_publicacao_sem_aprovacao.sql` (os arquivos rodam em ordem, cada um uma vez só).
 
 **2. Ativar o login com Google**
 
@@ -119,12 +119,6 @@ where id = (select id from auth.users where email = 'seu-email@gmail.com');
 ```
 
 Pronto: o link **Moderar** aparece no Caderno, e as suas publicações entram direto como "Da cozinha".
-
-**Para desligar a aprovação prévia** (se o volume for baixo e você confiar em quem escreve), rode no SQL Editor:
-
-```sql
-alter table public.publicacoes alter column status set default 'aprovada';
-```
 
 ## Como publicar na Vercel
 

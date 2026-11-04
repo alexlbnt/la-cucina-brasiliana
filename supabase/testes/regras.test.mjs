@@ -57,7 +57,7 @@ async function falha(promessa, trecho) {
 before(async () => {
   db = new PGlite();
   await db.exec(ESBOCO_SUPABASE);
-  for (const arquivo of ['0001_caderno_da_cozinha.sql', '0002_retrato_do_perfil.sql', '0003_editar_publicacao.sql']) {
+  for (const arquivo of ['0001_caderno_da_cozinha.sql', '0002_retrato_do_perfil.sql', '0003_editar_publicacao.sql', '0004_publicacao_sem_aprovacao.sql']) {
     await db.exec(await readFile(new URL(`../migrations/${arquivo}`, import.meta.url), 'utf8'));
   }
 
@@ -140,7 +140,7 @@ describe('publicações', () => {
     );
   });
 
-  test('leitor publica e a publicação nasce pendente, em nome dele', async () => {
+  test('leitor publica e a publicação já entra no caderno, em nome dele', async () => {
     const { rows } = await como(
       ANA,
       `insert into public.publicacoes (titulo, texto, prato_slug)
@@ -149,8 +149,9 @@ describe('publicações', () => {
     );
     idDaAna = rows[0].id;
     assert.equal(rows[0].autor_id, ANA);
-    assert.equal(rows[0].status, 'pendente');
-    assert.equal(rows[0].publicada_em, null);
+    assert.equal(rows[0].status, 'aprovada');
+    assert.ok(rows[0].publicada_em);
+    assert.equal((await como(null, 'select id from public.publicacoes where id = $1', [idDaAna])).rows.length, 1);
   });
 
   test('ninguém escolhe o próprio status nem publica em nome de outro', async () => {
@@ -164,7 +165,13 @@ describe('publicações', () => {
     );
   });
 
-  test('pendente só aparece para quem escreveu e para o admin', async () => {
+  test('leitor não muda o status, nem da própria', async () => {
+    const r = await como(ANA, `update public.publicacoes set status = 'recusada' where id = $1`, [idDaAna]);
+    assert.equal(r.affectedRows, 0);
+  });
+
+  test('admin recusa e a publicação só fica visível para quem escreveu e para o admin', async () => {
+    await como(CHEF, `update public.publicacoes set status = 'recusada' where id = $1`, [idDaAna]);
     const sql = 'select id from public.publicacoes where id = $1';
     assert.equal((await como(null, sql, [idDaAna])).rows.length, 0);
     assert.equal((await como(BETO, sql, [idDaAna])).rows.length, 0);
@@ -172,12 +179,7 @@ describe('publicações', () => {
     assert.equal((await como(CHEF, sql, [idDaAna])).rows.length, 1);
   });
 
-  test('leitor não aprova, nem a própria', async () => {
-    const r = await como(ANA, `update public.publicacoes set status = 'aprovada' where id = $1`, [idDaAna]);
-    assert.equal(r.affectedRows, 0);
-  });
-
-  test('admin aprova, a data de publicação é marcada e todos passam a ver', async () => {
+  test('admin aprova de volta, a data de publicação é marcada e todos passam a ver', async () => {
     await como(CHEF, `update public.publicacoes set status = 'aprovada' where id = $1`, [idDaAna]);
     const { rows } = await como(null, 'select status, publicada_em from public.publicacoes where id = $1', [idDaAna]);
     assert.equal(rows[0].status, 'aprovada');
@@ -209,6 +211,16 @@ describe('publicações', () => {
   test('ninguém apaga a publicação dos outros', async () => {
     const r = await como(BETO, 'delete from public.publicacoes where id = $1', [idDaAna]);
     assert.equal(r.affectedRows, 0);
+  });
+
+  test('admin apaga a publicação de qualquer pessoa', async () => {
+    const { rows } = await como(
+      'dono',
+      `insert into public.publicacoes (autor_id, titulo, texto) values ($1, 'Spam', 'Compre já, compre já!') returning id`,
+      [ANA],
+    );
+    const r = await como(CHEF, 'delete from public.publicacoes where id = $1', [rows[0].id]);
+    assert.equal(r.affectedRows, 1);
   });
 });
 
@@ -246,13 +258,13 @@ describe('editar publicação', () => {
     assert.equal((await ler(daAna)).editada_em, null);
   });
 
-  test('leitor edita e a publicação volta para a aprovação', async () => {
+  test('leitor edita e a publicação continua no caderno', async () => {
     const { rows } = await editar(ANA, daAna, 'Risoto de cogumelos', 'Ficou cremoso no ponto certo.');
-    assert.equal(rows[0].status, 'pendente');
+    assert.equal(rows[0].status, 'aprovada');
     const depois = await ler(daAna);
     assert.equal(depois.titulo, 'Risoto de cogumelos');
-    assert.equal(depois.status, 'pendente');
-    assert.equal(depois.publicada_em, null);
+    assert.equal(depois.status, 'aprovada');
+    assert.ok(depois.publicada_em);
     assert.ok(depois.editada_em);
   });
 
@@ -280,7 +292,8 @@ describe('opiniões e denúncias', () => {
       await como('dono', `select id from public.publicacoes where status = 'aprovada' and autor_id = $1`, [ANA])
     ).rows[0].id;
     publicacaoPendente = (
-      await como('dono', `select id from public.publicacoes where status = 'pendente' and autor_id = $1 limit 1`, [BETO])
+      await como('dono', `insert into public.publicacoes (autor_id, titulo, texto, status)
+        values ($1, 'Fora do caderno', 'Esta foi recusada pela moderação.', 'recusada') returning id`, [CHEF])
     ).rows[0].id;
   });
 
@@ -301,7 +314,7 @@ describe('opiniões e denúncias', () => {
     assert.equal(rows[0].autor_id, BETO);
   });
 
-  test('não dá para opinar em publicação pendente', async () => {
+  test('não dá para opinar em publicação fora do caderno', async () => {
     await falha(
       como(ANA, `insert into public.opinioes (publicacao_id, texto) values ($1, 'Oi, tudo bem?')`, [publicacaoPendente]),
       /row-level security/,

@@ -4,7 +4,7 @@ import Moldura from '../../../components/Moldura.astro';
 import Separador from '../../../components/Separador.astro';
 import BarraDoCaderno from '../../../components/caderno/BarraDoCaderno.astro';
 import CamposPublicacao from '../../../components/caderno/CamposPublicacao.astro';
-import { mensagemDeErro, validarPublicacao, type StatusPublicacao } from '../../../lib/caderno';
+import { mensagemDeErro, validarPublicacao } from '../../../lib/caderno';
 import { listarReceitas } from '../../../lib/receitas';
 
 export const prerender = false;
@@ -19,7 +19,7 @@ if (!perfil) return Astro.redirect(`/entrar?proximo=${encodeURIComponent(Astro.u
 
 const { data } = await supabase
   .from('publicacoes')
-  .select('id, autor_id, titulo, texto, prato_slug, status')
+  .select('id, autor_id, titulo, texto, prato_slug')
   .eq('id', id)
   .maybeSingle();
 const publicacao = data as {
@@ -28,7 +28,6 @@ const publicacao = data as {
   titulo: string;
   texto: string;
   prato_slug: string | null;
-  status: StatusPublicacao;
 } | null;
 
 // Só quem escreveu edita; para os outros, a página não existe.
@@ -36,7 +35,6 @@ if (!publicacao || publicacao.autor_id !== perfil.id) {
   return new Response(null, { status: 404, statusText: 'Not Found' });
 }
 
-const ehAdmin = perfil.papel === 'admin';
 const voltar = `/caderno/${id}`;
 let titulo = publicacao.titulo;
 let texto = publicacao.texto;
@@ -52,7 +50,7 @@ if (Astro.request.method === 'POST') {
 
   erro = validarPublicacao(titulo, texto);
   if (!erro) {
-    const { data: status, error } = await supabase.rpc('editar_publicacao', {
+    const { error } = await supabase.rpc('editar_publicacao', {
       publicacao: id,
       novo_titulo: titulo,
       novo_texto: texto,
@@ -61,8 +59,7 @@ if (Astro.request.method === 'POST') {
     if (error) {
       erro = mensagemDeErro(error);
     } else {
-      const ok = status === 'aprovada' ? 'editada' : 'reenviada';
-      return Astro.redirect(`${voltar}?ok=${ok}`, 303);
+      return Astro.redirect(`${voltar}?ok=editada`, 303);
     }
   }
 }
@@ -83,20 +80,6 @@ if (Astro.request.method === 'POST') {
         <CamposPublicacao titulo={titulo} texto={texto} prato={prato} />
 
         {erro && <p class="aviso erro" role="alert">{erro}</p>}
-
-        {
-          !ehAdmin && publicacao.status === 'aprovada' && (
-            <p class="aviso">
-              Ao salvar uma mudança, a publicação sai do caderno por um tempinho e volta assim que a edição for lida.
-              As opiniões continuam guardadas.
-            </p>
-          )
-        }
-        {
-          !ehAdmin && publicacao.status === 'recusada' && (
-            <p class="aviso">Ao salvar, a publicação é enviada de novo para leitura.</p>
-          )
-        }
 
         <div class="acoes">
           <button class="botao cheio" type="submit">Salvar alterações</button>
