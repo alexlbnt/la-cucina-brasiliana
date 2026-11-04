@@ -4,8 +4,10 @@ import Moldura from '../components/Moldura.astro';
 import Separador from '../components/Separador.astro';
 import Monograma from '../components/caderno/Monograma.astro';
 import Retrato from '../components/caderno/Retrato.astro';
-import { LIMITES, formatarData, mensagemDeErro, type StatusPublicacao } from '../lib/caderno';
+import { LIMITES, formatarData, mensagemDeErro, type Autor, type StatusPublicacao } from '../lib/caderno';
 import { IDS_RETRATO, ehRetrato, infoRetrato } from '../lib/retratos';
+import { listarReceitas, urlDaReceita } from '../lib/receitas';
+import { resumir } from '../lib/texto';
 
 export const prerender = false;
 
@@ -17,6 +19,7 @@ const MENSAGENS: Record<string, string> = {
   nome: 'Nome atualizado.',
   retrato: 'Retrato atualizado. É assim que você aparece no caderno.',
   apagada: 'Publicação apagada.',
+  desguardada: 'Receita tirada das guardadas.',
 };
 
 let nome = perfil.nome;
@@ -54,6 +57,12 @@ if (Astro.request.method === 'POST') {
     }
   }
 
+  if (acao === 'desguardar') {
+    const slug = String(formulario.get('slug') ?? '');
+    const { error } = await supabase.from('favoritos').delete().eq('prato_slug', slug);
+    if (!error) return Astro.redirect('/conta?ok=desguardada#receitas-guardadas', 303);
+  }
+
   if (acao === 'apagar-conta') {
     if (formulario.get('confirmo') !== 'sim') {
       erroConta = 'Marque a caixa de confirmação para apagar a conta.';
@@ -69,7 +78,15 @@ if (Astro.request.method === 'POST') {
   }
 }
 
-const [{ data }, { data: desde }, { count: totalOpinioes }, { count: recebidas }] = await Promise.all([
+const [
+  { data },
+  { data: desde },
+  { count: totalOpinioes },
+  { count: recebidas },
+  { data: dadosRecebidas },
+  { data: dadosGuardadas },
+  { data: vistasAte },
+] = await Promise.all([
   supabase
     .from('publicacoes')
     .select('id, titulo, status, criada_em')
@@ -83,7 +100,36 @@ const [{ data }, { data: desde }, { count: totalOpinioes }, { count: recebidas }
     .select('id, publicacao:publicacoes!inner(autor_id)', { count: 'exact', head: true })
     .eq('publicacao.autor_id', perfil.id)
     .neq('autor_id', perfil.id),
+  // As últimas opiniões recebidas, para a lista de novidades.
+  supabase
+    .from('opinioes')
+    .select('id, texto, criada_em, autor:perfis(nome, papel, retrato), publicacao:publicacoes!inner(id, titulo, autor_id)')
+    .eq('publicacao.autor_id', perfil.id)
+    .neq('autor_id', perfil.id)
+    .eq('oculta', false)
+    .order('criada_em', { ascending: false })
+    .limit(8),
+  supabase.from('favoritos').select('prato_slug').order('criado_em', { ascending: false }),
+  // Abrir a conta conta como "vi as opiniões": zera o aviso do cabeçalho e devolve a marca anterior.
+  Astro.request.method === 'GET' ? supabase.rpc('marcar_opinioes_vistas') : Promise.resolve({ data: null }),
 ]);
+
+interface OpiniaoRecebida {
+  id: string;
+  texto: string;
+  criada_em: string;
+  autor: Autor | null;
+  publicacao: { id: string; titulo: string };
+}
+const opinioesRecebidas = (dadosRecebidas ?? []) as unknown as OpiniaoRecebida[];
+const marcaAnterior = typeof vistasAte === 'string' ? new Date(vistasAte).getTime() : null;
+const ehNova = (o: OpiniaoRecebida) => marcaAnterior !== null && new Date(o.criada_em).getTime() > marcaAnterior;
+const quantasNovas = opinioesRecebidas.filter(ehNova).length;
+
+const porSlug = new Map((await listarReceitas()).map((r) => [r.id, r]));
+const guardadas = ((dadosGuardadas ?? []) as { prato_slug: string }[])
+  .map((f) => porSlug.get(f.prato_slug))
+  .filter((r) => r !== undefined);
 
 const minhas = (data ?? []) as { id: string; titulo: string; status: StatusPublicacao; criada_em: string }[];
 const ROTULO_STATUS: Record<StatusPublicacao, string> = {
@@ -233,6 +279,67 @@ const ok = MENSAGENS[Astro.url.searchParams.get('ok') ?? ''];
               </ul>
               <a class="botao escrever" href="/caderno/escrever">Escrever no caderno</a>
             </>
+          )
+        }
+      </section>
+
+      <section id="opinioes-recebidas" aria-labelledby="titulo-recebidas">
+        <div class="cabeca-secao">
+          <h2 id="titulo-recebidas" class="versalete rotulo">
+            Opiniões recebidas
+            {quantasNovas > 0 && <span class="contador-novas">{quantasNovas === 1 ? '1 nova' : `${quantasNovas} novas`}</span>}
+          </h2>
+          <p class="dica">O que as pessoas disseram nas suas publicações. As novas ficam marcadas até a próxima visita.</p>
+        </div>
+        {
+          opinioesRecebidas.length === 0 ? (
+            <p class="vazio">Nenhuma opinião nas suas publicações ainda.</p>
+          ) : (
+            <ul class="recebidas">
+              {opinioesRecebidas.map((o) => (
+                <li class:list={{ nova: ehNova(o) }}>
+                  <Retrato nome={o.autor?.nome ?? '?'} retrato={o.autor?.retrato} tamanho={36} />
+                  <div>
+                    <p class="quem-opinou">
+                      <strong>{o.autor?.nome ?? 'Alguém'}</strong> em
+                      <a href={`/caderno/${o.publicacao.id}#opinioes`}>{o.publicacao.titulo}</a>
+                      {ehNova(o) && <span class="versalete marca-nova">nova</span>}
+                    </p>
+                    <p class="trecho">{resumir(o.texto, 180)}</p>
+                    <time datetime={o.criada_em}>{formatarData(o.criada_em)}</time>
+                  </div>
+                </li>
+              ))}
+            </ul>
+          )
+        }
+      </section>
+
+      <section id="receitas-guardadas" aria-labelledby="titulo-guardadas">
+        <div class="cabeca-secao">
+          <h2 id="titulo-guardadas" class="versalete rotulo">Receitas guardadas</h2>
+          <p class="dica">Guarde uma receita pelo botão na página dela. Aqui elas valem em qualquer aparelho.</p>
+        </div>
+        {
+          guardadas.length === 0 ? (
+            <p class="vazio">
+              Nenhuma receita guardada ainda. <a href="/cardapio">Passe pelo cardápio</a>.
+            </p>
+          ) : (
+            <ul class="guardadas">
+              {guardadas.map((r) => (
+                <li>
+                  <a href={urlDaReceita(r)}>{r.data.titulo}</a>
+                  <form method="post">
+                    <input type="hidden" name="acao" value="desguardar" />
+                    <input type="hidden" name="slug" value={r.id} />
+                    <button class="botao-texto" type="submit" aria-label={`Tirar ${r.data.titulo} das guardadas`}>
+                      Tirar
+                    </button>
+                  </form>
+                </li>
+              ))}
+            </ul>
           )
         }
       </section>
@@ -563,6 +670,95 @@ const ok = MENSAGENS[Astro.url.searchParams.get('ok') ?? ''];
 
   .escrever {
     justify-self: start;
+  }
+
+  /* ---------- Opiniões recebidas ---------- */
+
+  .contador-novas {
+    display: inline-block;
+    margin-left: 0.75rem;
+    padding: 0.05rem 0.5rem 0 0.6rem;
+    background: var(--cor-rotulo);
+    color: var(--cor-fundo);
+    font-size: 0.6875rem;
+    letter-spacing: 0.2em;
+    vertical-align: 0.1em;
+  }
+
+  .recebidas,
+  .guardadas {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .recebidas li {
+    display: grid;
+    grid-template-columns: auto 1fr;
+    align-items: start;
+    gap: 0.85rem;
+    padding: 0.9rem 0.75rem;
+    border-top: 1px solid var(--cor-borda);
+  }
+
+  .recebidas li:first-child {
+    border-top: 0;
+  }
+
+  .recebidas li.nova {
+    background: var(--cor-cartao);
+    box-shadow: inset 3px 0 0 var(--cor-rotulo);
+  }
+
+  .quem-opinou {
+    color: var(--cor-texto-2);
+  }
+
+  .quem-opinou strong {
+    font-weight: 500;
+    color: var(--cor-texto);
+  }
+
+  .marca-nova {
+    margin-left: 0.6rem;
+    font-size: 0.6875rem;
+    letter-spacing: 0.25em;
+    color: var(--cor-rotulo);
+  }
+
+  .trecho {
+    margin-top: 0.15rem;
+    font-style: italic;
+    color: var(--cor-texto-2);
+  }
+
+  .recebidas time {
+    font-size: 0.9rem;
+    color: var(--cor-texto-3);
+  }
+
+  /* ---------- Receitas guardadas ---------- */
+
+  .guardadas li {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 0.25rem 1rem;
+    padding-block: 0.6rem;
+    border-top: 1px solid var(--cor-borda);
+  }
+
+  .guardadas li:first-child {
+    border-top: 0;
+    padding-top: 0;
+  }
+
+  .guardadas a {
+    font-family: var(--fonte-titulo);
+    font-weight: 600;
+    font-size: 1.15rem;
+    text-decoration: none;
   }
 
   /* ---------- Sessão ---------- */

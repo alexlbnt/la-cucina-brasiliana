@@ -7,12 +7,14 @@ interface Props {
   /** Título da página; sem ele, fica só o nome da casa. */
   titulo?: string;
   descricao?: string;
+  /** Página que não deve aparecer no Google (ex.: a de sem internet). */
+  semIndice?: boolean;
 }
 
 const NOME = 'La cucina brasiliana';
 const FRASE = 'Base italiana, ingredientes simples e espaço para improvisar.';
 
-const { titulo, descricao = FRASE } = Astro.props;
+const { titulo, descricao = FRASE, semIndice = false } = Astro.props;
 
 const tituloCompleto = titulo ? `${titulo} · ${NOME}` : NOME;
 const canonica = new URL(Astro.url.pathname, Astro.site);
@@ -27,12 +29,14 @@ const imagemOg = new URL('/og.png', Astro.site);
     <title>{tituloCompleto}</title>
     <meta name="description" content={descricao} />
     <link rel="canonical" href={canonica} />
+    {semIndice && <meta name="robots" content="noindex" />}
     <!-- Prova de propriedade do domínio no Google Search Console (verificação do login com Google) -->
     <meta name="google-site-verification" content="EQ2o-8VWMXow2pN6fQu8kSr_ocl-hGrdvbQu3I36aKM" />
 
     <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
     <link rel="icon" href="/favicon.png" type="image/png" sizes="64x64" />
     <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+    <link rel="manifest" href="/manifest.webmanifest" />
     <meta name="theme-color" content="#F6F0E4" media="(prefers-color-scheme: light)" />
     <meta name="theme-color" content="#1F2D4D" media="(prefers-color-scheme: dark)" />
     <script is:inline>
@@ -66,6 +70,7 @@ const imagemOg = new URL('/og.png', Astro.site);
       rel="stylesheet"
       href="https://fonts.googleapis.com/css2?family=EB+Garamond:ital,wght@0,400;0,500;1,400&family=Playfair+Display:ital,wght@0,600;0,700;1,400&display=swap"
     />
+    <slot name="head" />
   </head>
   <body>
     <a class="pular-conteudo" href="#conteudo">Pular para o conteúdo</a>
@@ -74,5 +79,14 @@ const imagemOg = new URL('/og.png', Astro.site);
       <slot />
     </main>
     <Rodape />
+
+    <script>
+      // Guarda o cardápio e as receitas para abrir sem internet (o /sw.js sai de src/pages/sw.js.ts).
+      if (import.meta.env.PROD && 'serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+          navigator.serviceWorker.register('/sw.js').catch(() => {});
+        });
+      }
+    </script>
   </body>
 </html>

@@ -4,6 +4,7 @@
  *   favicon.png          64×64
  *   apple-touch-icon.png 180×180, sobre o creme
  *   og.png               1200×630, selo centralizado sobre o creme
+ *   icone-*.png          ícones do app (192, 512 e 512 "maskable"), para o manifest
  *
  * Uso: npm run imagens  (só é preciso rodar de novo se o desenho mudar)
  */
@@ -93,4 +94,12 @@ await sharp(Buffer.from(seloSvg({ tamanho: 64 })))
 await (await seloSobreCreme(180, 180, 164)).toFile(caminho('apple-touch-icon.png'));
 await (await seloSobreCreme(1200, 630, 520)).toFile(caminho('og.png'));
 
-console.log('Imagens geradas em public/: favicon.svg, favicon.png, apple-touch-icon.png, og.png');
+// Ícones do app (manifest.webmanifest). Os "maskable" deixam respiro para o
+// recorte redondo ou arredondado que o Android aplica.
+await (await seloSobreCreme(192, 192, 176)).toFile(caminho('icone-192.png'));
+await (await seloSobreCreme(512, 512, 472)).toFile(caminho('icone-512.png'));
+await (await seloSobreCreme(512, 512, 360)).toFile(caminho('icone-mascara-512.png'));
+
+console.log(
+  'Imagens geradas em public/: favicon.svg, favicon.png, apple-touch-icon.png, og.png, icone-192.png, icone-512.png, icone-mascara-512.png',
+);

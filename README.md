@@ -76,17 +76,25 @@ O mural da página inicial. Qualquer pessoa lê. Para escrever ou opinar, é pre
 - **Editar:** quem escreveu pode editar a própria publicação, que continua no ar e ganha a marca "Editada em".
 - **Opiniões** aparecem na hora. Qualquer pessoa logada pode denunciar uma opinião, e você decide em **Moderar** se ela é ocultada ou mantida.
 - **Limites contra spam:** cada pessoa pode enviar 3 publicações e 30 opiniões por dia. Um campo-isca invisível barra robôs.
-- **Minha conta:** cada pessoa muda o próprio nome, escolhe um dos 10 retratos do Esgabilado (desenhados em SVG em `src/lib/retratos.ts`; sem escolha, aparecem as iniciais), acompanha as próprias publicações e pode apagar a conta com tudo o que escreveu.
+- **Minha conta:** cada pessoa muda o próprio nome, escolhe um dos 10 retratos do Esgabilado (desenhados em SVG em `src/lib/retratos.ts`; sem escolha, aparecem as iniciais), acompanha as próprias publicações, vê as opiniões recebidas e as receitas guardadas e pode apagar a conta com tudo o que escreveu.
+- **Aviso de opiniões novas:** quem está conectado vê um ícone de conta no cabeçalho, com o número de opiniões novas nas suas publicações. Abrir Minha conta marca tudo como visto.
 - **Privacidade:** o site guarda só nome, e-mail (nunca exibido) e o que a pessoa escreve. A foto da conta Google não é guardada nem carregada. As páginas `/privacidade` e `/termos` trazem o e-mail de contato e a data de atualização no topo do arquivo; atualize os dois se algo mudar.
 
 Toda a segurança está no banco. As regras de acesso (RLS) ficam em `supabase/migrations/` e são testadas com `npm run testar`.
+
+## Na cozinha
+
+- **Modo cozinha:** na página de cada receita. Some tudo o que distrai, a letra cresce, a tela fica acesa (Wake Lock, nos navegadores que permitem) e dá para riscar ingredientes e passos com um toque. Opcional: **um passo por vez**, com botões grandes, deslize do dedo e setas do teclado. As marcações ficam só no navegador, em `cozinha:<slug>`, e se apagam sozinhas depois de 12 horas ou quando a receita muda. As regras estão em `src/lib/cozinha.ts`.
+- **Receitas guardadas:** botão "Guardar receita". Sem conta, ficam no navegador; com conta, no banco (tabela `favoritos`), e as do navegador passam para a conta ao entrar. Aparecem no topo do cardápio e em Minha conta.
+- **Sem internet:** um service worker (`/sw.js`, gerado em `src/pages/sw.js.ts`) guarda o cardápio, as receitas, a Sobre e as fontes. Sem rede, elas abrem do aparelho; o Caderno mostra a página `/offline`. O site também pode ser instalado na tela inicial (`public/manifest.webmanifest`).
+- **Google:** cada receita leva os dados estruturados de `Recipe` (Schema.org), para aparecer com destaque nos resultados de busca.
 
 ### Ligar o Caderno (só uma vez)
 
 **1. Criar o banco no Supabase**
 
 1. Crie uma conta e um projeto em [supabase.com](https://supabase.com). O plano gratuito basta.
-2. No projeto, abra **SQL Editor → New query**, cole todo o conteúdo de `supabase/migrations/0001_caderno_da_cozinha.sql` e clique em **Run**. Depois, numa nova query, faça o mesmo com `0002_retrato_do_perfil.sql` depois `0003_editar_publicacao.sql` e `0004_publicacao_sem_aprovacao.sql` (os arquivos rodam em ordem, cada um uma vez só).
+2. No projeto, abra **SQL Editor → New query**, cole todo o conteúdo de `supabase/migrations/0001_caderno_da_cozinha.sql` e clique em **Run**. Depois, numa nova query, faça o mesmo com `0002_retrato_do_perfil.sql` depois `0003_editar_publicacao.sql`, `0004_publicacao_sem_aprovacao.sql` e `0005_favoritos_e_avisos.sql` (os arquivos rodam em ordem, cada um uma vez só).
 
 **2. Ativar o login com Google**
 
@@ -144,6 +152,8 @@ src/
 │  ├─ simbolos.ts      os desenhos do ratinho, do raminho e do selo (SVG)
 │  ├─ supabase.ts      conexão com o banco, como a pessoa logada
 │  ├─ caderno.ts       tipos, limites e mensagens do Caderno
+│  ├─ cozinha.ts       regras do modo cozinha (o que fica salvo e por quanto tempo)
+│  ├─ navegador/       sessão e receitas guardadas, do lado do navegador
 │  └─ texto.ts         formatação segura do que as pessoas escrevem
 ├─ assets/esgabilado/  as cenas do Esgabilado, já separadas em traço e folhas
 ├─ components/         Ratinho, Esgabilado, Raminho, Selo, Separador, Moldura, cabeçalho e rodapé
@@ -153,18 +163,21 @@ src/
 │  ├─ index.astro      início + Caderno da cozinha
 │  ├─ caderno/         publicação (com opiniões) e escrever
 │  ├─ api/auth/        login com Google, retorno e sair
-│  └─ ...              cardápio, receitas, sobre, entrar, conta, moderar, privacidade, termos e 404
+│  ├─ api/eu.ts        sessão, opiniões novas e guardadas, para as páginas estáticas
+│  ├─ api/favoritos.ts guardar e tirar receitas da conta
+│  ├─ sw.js.ts         o service worker (funcionar sem internet)
+│  └─ ...              cardápio, receitas, sobre, entrar, conta, moderar, privacidade, termos, offline e 404
 └─ styles/global.css   cores, fontes, formulários e modo escuro
 arte/esgabilado/           as artes originais do Esgabilado, sobre o creme
 scripts/gerar-imagens.mjs  gera favicon e imagem Open Graph a partir do selo
 scripts/separar-esgabilado.mjs  separa as artes do Esgabilado em máscaras
 supabase/migrations/       o banco do Caderno (tabelas e regras de acesso)
 supabase/testes/           testes das regras de acesso, num Postgres em memória
-tests/                     testes da formatação de texto
+tests/                     testes da formatação de texto, dos retratos e do modo cozinha
 ```
 
 As cores ficam em variáveis no topo de `src/styles/global.css`. O tema segue o modo claro ou escuro do navegador de quem visita; se a pessoa trocar no botão do cabeçalho, a escolha fica salva para as próximas visitas.
 
-O favicon e a imagem de compartilhamento (`public/favicon.svg`, `favicon.png`, `apple-touch-icon.png` e `og.png`) já estão prontos. Só é preciso rodar `npm run imagens` de novo se o desenho do selo mudar.
+O favicon, os ícones do app e a imagem de compartilhamento (`public/favicon.svg`, `favicon.png`, `apple-touch-icon.png`, `icone-*.png` e `og.png`) já estão prontos. Só é preciso rodar `npm run imagens` de novo se o desenho do selo mudar.
 
 O Esgabilado, o ratinho cozinheiro, aparece em cinco cenas: panela (Sobre), tigela (receitas sem foto), colher de pau (404), prato servido (topo do cardápio) e queijo com uvas (seção Acompanhamentos). As artes originais ficam em `arte/esgabilado/`. O script `npm run esgabilado` separa cada uma em duas máscaras transparentes, o traço e as folhas, que o site pinta com as cores do tema. Para trocar ou acrescentar uma cena, salve o PNG em `arte/esgabilado/` com o nome da cena, rode o script e acrescente o nome ao tipo `Cena` em `src/components/Esgabilado.astro`.

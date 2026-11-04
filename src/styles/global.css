@@ -82,6 +82,8 @@
 html {
   -webkit-text-size-adjust: 100%;
   text-size-adjust: 100%;
+  /* O cabeçalho fica fixo no topo: âncoras (#opinioes, #retrato...) param abaixo dele */
+  scroll-padding-top: 5.5rem;
 }
 
 body {
@@ -343,8 +345,70 @@ button.botao {
   }
 }
 
+/* ---------- Movimento ---------- */
+
+/* Troca de página suave (View Transitions entre documentos). Navegadores sem
+   suporte trocam de página como sempre. O cabeçalho fica parado; o resto
+   esmaece e sobe um tantinho. */
+@media (prefers-reduced-motion: no-preference) {
+  @view-transition {
+    navigation: auto;
+  }
+
+  .cabecalho {
+    view-transition-name: cabecalho;
+  }
+
+  ::view-transition-old(root) {
+    animation: 140ms ease-in both sumir;
+  }
+
+  ::view-transition-new(root) {
+    animation: 260ms ease-out both surgir;
+  }
+
+  /* O Esgabilado e o ratinho "respiram" quando o mouse passa por cima */
+  .esgabilado,
+  .ratinho {
+    transform-origin: 50% 85%;
+  }
+
+  .esgabilado:hover,
+  a:hover > .ratinho,
+  .rodape .ratinho:hover {
+    animation: respiro 2.4s ease-in-out infinite;
+  }
+}
+
+@keyframes sumir {
+  to {
+    opacity: 0;
+  }
+}
+
+@keyframes surgir {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+}
+
+@keyframes respiro {
+  0%,
+  100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.04) translateY(-1.5%);
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
-  * {
+  *,
+  *::before,
+  *::after {
     transition: none !important;
+    animation: none !important;
+    scroll-behavior: auto !important;
   }
 }

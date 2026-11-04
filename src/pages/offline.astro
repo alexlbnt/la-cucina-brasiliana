@@ -1,0 +1,100 @@
+---
+/**
+ * Mostrada pelo service worker quando não há internet e a página pedida
+ * não está guardada (o Caderno, a conta). As receitas abrem normalmente.
+ */
+import Base from '../layouts/Base.astro';
+import Moldura from '../components/Moldura.astro';
+import Separador from '../components/Separador.astro';
+import Esgabilado from '../components/Esgabilado.astro';
+import { listarReceitas, urlDaReceita } from '../lib/receitas';
+
+const receitas = await listarReceitas();
+---
+
+<Base titulo="Sem internet" descricao="Você está sem internet, mas as receitas abrem assim mesmo." semIndice>
+  <div class="pagina">
+    <Moldura>
+      <header class="topo">
+        <Esgabilado cena="colher" tamanho="min(36vw, 140px)" />
+        <p class="versalete rotulo">Sem internet</p>
+        <h1>A conexão caiu, a cozinha não</h1>
+        <Separador />
+        <p class="frase">
+          O Caderno da cozinha precisa de internet, mas o cardápio e todas as receitas estão guardados neste aparelho.
+        </p>
+      </header>
+
+      <ul class="receitas">
+        {
+          receitas.map((receita) => (
+            <li>
+              <a href={urlDaReceita(receita)}>{receita.data.titulo}</a>
+            </li>
+          ))
+        }
+      </ul>
+
+      <p class="acoes">
+        <a class="botao" href="/cardapio">Ver o cardápio</a>
+        <button class="botao-texto" type="button" data-tentar>Tentar de novo</button>
+      </p>
+    </Moldura>
+  </div>
+</Base>
+
+<style>
+  .pagina {
+    max-width: 44rem;
+  }
+
+  .topo {
+    display: grid;
+    justify-items: center;
+    gap: 0.75rem;
+    margin-bottom: 2rem;
+    text-align: center;
+  }
+
+  h1 {
+    font-size: clamp(1.9rem, 1.4rem + 2.5vw, 2.75rem);
+  }
+
+  .frase {
+    max-width: 32rem;
+    font-style: italic;
+    color: var(--cor-texto-2);
+  }
+
+  .receitas {
+    display: grid;
+    gap: 0.6rem;
+    margin: 0 0 2rem;
+    padding: 0;
+    list-style: none;
+    text-align: center;
+  }
+
+  .receitas a {
+    font-family: var(--fonte-titulo);
+    font-weight: 600;
+    font-size: 1.2rem;
+    text-decoration: none;
+  }
+
+  .receitas a:hover {
+    text-decoration: underline;
+  }
+
+  .acoes {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    align-items: center;
+    gap: 1rem 1.75rem;
+  }
+</style>
+
+<script>
+  document.querySelector('[data-tentar]')?.addEventListener('click', () => location.reload());
+</script>

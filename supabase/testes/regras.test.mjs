@@ -57,7 +57,7 @@ async function falha(promessa, trecho) {
 before(async () => {
   db = new PGlite();
   await db.exec(ESBOCO_SUPABASE);
-  for (const arquivo of ['0001_caderno_da_cozinha.sql', '0002_retrato_do_perfil.sql', '0003_editar_publicacao.sql', '0004_publicacao_sem_aprovacao.sql']) {
+  for (const arquivo of ['0001_caderno_da_cozinha.sql', '0002_retrato_do_perfil.sql', '0003_editar_publicacao.sql', '0004_publicacao_sem_aprovacao.sql', '0005_favoritos_e_avisos.sql']) {
     await db.exec(await readFile(new URL(`../migrations/${arquivo}`, import.meta.url), 'utf8'));
   }
 
@@ -340,6 +340,95 @@ describe('opiniões e denúncias', () => {
   });
 });
 
+describe('receitas guardadas', () => {
+  test('anônimo não guarda nem lê', async () => {
+    await falha(como(null, `insert into public.favoritos (prato_slug) values ('pure-de-batata')`), /permission denied/);
+    await falha(como(null, 'select * from public.favoritos'), /permission denied/);
+  });
+
+  test('cada pessoa guarda e vê só as próprias', async () => {
+    await como(ANA, `insert into public.favoritos (prato_slug) values ('pure-de-batata'), ('arroz-chamado-no-alho')`);
+    await como(BETO, `insert into public.favoritos (prato_slug) values ('pure-de-batata')`);
+    const daAna = await como(ANA, 'select perfil_id, prato_slug from public.favoritos order by prato_slug');
+    assert.deepEqual(
+      daAna.rows.map((r) => r.prato_slug),
+      ['arroz-chamado-no-alho', 'pure-de-batata'],
+    );
+    assert.ok(daAna.rows.every((r) => r.perfil_id === ANA));
+    assert.equal((await como(BETO, 'select * from public.favoritos')).rows.length, 1);
+  });
+
+  test('guardar de novo não duplica', async () => {
+    await como(ANA, `insert into public.favoritos (prato_slug) values ('pure-de-batata') on conflict do nothing`);
+    assert.equal((await como(ANA, 'select * from public.favoritos')).rows.length, 2);
+  });
+
+  test('ninguém guarda em nome de outro nem tira das guardadas dos outros', async () => {
+    await falha(
+      como(ANA, `insert into public.favoritos (perfil_id, prato_slug) values ($1, 'omelete')`, [BETO]),
+      /permission denied/,
+    );
+    const r = await como(ANA, 'delete from public.favoritos where perfil_id = $1', [BETO]);
+    assert.equal(r.affectedRows, 0);
+    assert.equal((await como(BETO, 'select * from public.favoritos')).rows.length, 1);
+  });
+
+  test('só aceita endereços de receita', async () => {
+    await falha(como(ANA, `insert into public.favoritos (prato_slug) values ('<script>')`), /check constraint/);
+  });
+
+  test('tirar das guardadas', async () => {
+    await como(ANA, `delete from public.favoritos where prato_slug = 'arroz-chamado-no-alho'`);
+    assert.equal((await como(ANA, 'select * from public.favoritos')).rows.length, 1);
+  });
+});
+
+describe('aviso de opiniões novas', () => {
+  let daAna;
+
+  before(async () => {
+    daAna = (
+      await como('dono', `insert into public.publicacoes (autor_id, titulo, texto) values ($1, 'Fiz o purê', 'Ficou cremoso demais!') returning id`, [ANA])
+    ).rows[0].id;
+  });
+
+  const novas = async (quem) => (await como(quem, 'select public.opinioes_novas() as n')).rows[0].n;
+
+  test('anônimo não consulta nem marca', async () => {
+    await falha(como(null, 'select public.opinioes_novas()'), /permission denied/);
+    await falha(como(null, 'select public.marcar_opinioes_vistas()'), /permission denied/);
+  });
+
+  test('conta só opiniões de outras pessoas nas publicações de quem pergunta', async () => {
+    const antes = await novas(ANA);
+    await como(ANA, `insert into public.opinioes (publicacao_id, texto) values ($1, 'Eu mesma comentando')`, [daAna]);
+    assert.equal(await novas(ANA), antes, 'a própria opinião não conta');
+
+    await como(CHEF, `insert into public.opinioes (publicacao_id, texto) values ($1, 'Que beleza!')`, [daAna]);
+    assert.equal(await novas(ANA), antes + 1);
+    assert.equal(await novas(CHEF), 0, 'o Chef não recebe aviso da publicação da Ana');
+  });
+
+  test('marcar como vistas zera o aviso e devolve a marca anterior', async () => {
+    const { rows } = await como(ANA, 'select public.marcar_opinioes_vistas() as anterior');
+    assert.ok(rows[0].anterior instanceof Date);
+    assert.equal(await novas(ANA), 0);
+
+    await como(CHEF, `insert into public.opinioes (publicacao_id, texto) values ($1, 'Passei de novo')`, [daAna]);
+    assert.equal(await novas(ANA), 1);
+  });
+
+  test('opinião oculta pela moderação não conta', async () => {
+    await como(CHEF, `update public.opinioes set oculta = true where texto = 'Passei de novo'`);
+    assert.equal(await novas(ANA), 0);
+  });
+
+  test('a marca de leitura é privada', async () => {
+    await falha(como(BETO, 'select * from public.leituras'), /permission denied/);
+    await falha(como(ANA, 'select * from public.leituras'), /permission denied/);
+  });
+});
+
 describe('apagar a conta', () => {
   test('anônimo não pode chamar', async () => {
     await falha(como(null, 'select public.apagar_minha_conta()'), /permission denied/);
@@ -353,5 +442,6 @@ describe('apagar a conta', () => {
     assert.equal(await contar('public.perfis', 'id'), 0);
     assert.equal(await contar('public.publicacoes', 'autor_id'), 0);
     assert.equal(await contar('public.opinioes', 'autor_id'), 0);
+    assert.equal(await contar('public.favoritos', 'perfil_id'), 0);
   });
 });

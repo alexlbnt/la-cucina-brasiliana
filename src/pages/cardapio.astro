@@ -23,6 +23,12 @@ const cenasDaSecao: Partial<Record<Categoria, 'queijo'>> = { Acompanhamentos: 'q
         <p class="frase">Base italiana, ingredientes simples e espaço para improvisar</p>
       </header>
 
+      <!-- Preenchida pelo script com as receitas guardadas (na conta ou neste navegador) -->
+      <section class="guardadas" aria-labelledby="titulo-guardadas" data-guardadas hidden>
+        <h2 id="titulo-guardadas" class="versalete rotulo">Suas receitas guardadas</h2>
+        <ul data-lista-guardadas></ul>
+      </section>
+
       {
         secoes.map(({ categoria, receitas }) => {
           const idSecao = `secao-${categoria.toLowerCase()}`;
@@ -37,9 +43,15 @@ const cenasDaSecao: Partial<Record<Categoria, 'queijo'>> = { Acompanhamentos: 'q
               </div>
               <ul class="pratos">
                 {receitas.map((receita) => (
-                  <li class="prato">
+                  <li class="prato" data-prato={receita.id}>
                     <h3>
                       <a href={urlDaReceita(receita)}>{receita.data.titulo}</a>
+                      <span class="marca-guardada" title="Guardada" hidden>
+                        <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true">
+                          <path d="M6.5 3.5h11v17L12 16.25 6.5 20.5v-17Z" />
+                        </svg>
+                        <span class="apenas-leitor">(guardada)</span>
+                      </span>
                     </h3>
                     <span class="numero" aria-hidden="true">
                       {formatarNumero(receita.data.numero)}
@@ -55,6 +67,9 @@ const cenasDaSecao: Partial<Record<Categoria, 'queijo'>> = { Acompanhamentos: 'q
 
       <div class="fim">
         <Separador />
+        <p class="sem-internet" data-sem-internet hidden>
+          O cardápio e as receitas ficam guardados neste aparelho e abrem mesmo sem internet.
+        </p>
       </div>
     </Moldura>
   </div>
@@ -155,6 +170,109 @@ const cenasDaSecao: Partial<Record<Categoria, 'queijo'>> = { Acompanhamentos: 'q
   }
 
   .fim {
+    display: grid;
+    gap: 1.25rem;
     margin-top: clamp(2.5rem, 6vw, 3.5rem);
   }
+
+  .sem-internet {
+    font-size: 0.95rem;
+    font-style: italic;
+    text-align: center;
+    color: var(--cor-texto-3);
+  }
+
+  .sem-internet[hidden] {
+    display: none;
+  }
+
+  /* ---------- Guardadas ---------- */
+
+  .guardadas {
+    margin-bottom: clamp(2rem, 5vw, 3rem);
+    padding: 1.25rem 1.5rem 1.4rem;
+    border: 1px solid var(--cor-borda);
+    background: var(--cor-cartao);
+  }
+
+  .guardadas[hidden] {
+    display: none;
+  }
+
+  .guardadas h2 {
+    margin-bottom: 0.75rem;
+    font-weight: 500;
+  }
+
+  .guardadas ul {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem 1.75rem;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .guardadas :global(a) {
+    font-family: var(--fonte-titulo);
+    font-weight: 600;
+    font-size: 1.15rem;
+    text-decoration: none;
+  }
+
+  .guardadas :global(a:hover) {
+    text-decoration: underline;
+  }
+
+  .marca-guardada {
+    display: inline-block;
+    margin-left: 0.4rem;
+    vertical-align: 0.1em;
+    color: var(--cor-rotulo);
+  }
+
+  .marca-guardada[hidden] {
+    display: none;
+  }
+
+  .marca-guardada svg {
+    fill: currentColor;
+  }
 </style>
+
+<script>
+  import { EVENTO_GUARDADAS, listarGuardadas, type Guardadas } from '../lib/navegador/guardadas';
+
+  const secao = document.querySelector<HTMLElement>('[data-guardadas]')!;
+  const lista = document.querySelector<HTMLElement>('[data-lista-guardadas]')!;
+  const pratos = new Map(
+    [...document.querySelectorAll<HTMLElement>('[data-prato]')].map((prato) => [prato.dataset.prato!, prato]),
+  );
+
+  function mostrar({ slugs }: Guardadas) {
+    const guardadas = slugs.filter((slug) => pratos.has(slug));
+    lista.replaceChildren(
+      ...guardadas.map((slug) => {
+        const original = pratos.get(slug)!.querySelector<HTMLAnchorElement>('h3 a')!;
+        const item = document.createElement('li');
+        const link = document.createElement('a');
+        link.href = original.href;
+        link.textContent = original.textContent;
+        item.append(link);
+        return item;
+      }),
+    );
+    secao.hidden = guardadas.length === 0;
+    for (const [slug, prato] of pratos) {
+      prato.querySelector<HTMLElement>('.marca-guardada')!.hidden = !guardadas.includes(slug);
+    }
+  }
+
+  listarGuardadas().then(mostrar);
+  document.addEventListener(EVENTO_GUARDADAS, (evento) => mostrar((evento as CustomEvent<Guardadas>).detail));
+
+  // Avisa que dá para usar sem internet só quando isso já é verdade neste aparelho.
+  navigator.serviceWorker?.ready.then(() => {
+    document.querySelector<HTMLElement>('[data-sem-internet]')!.hidden = false;
+  });
+</script>
