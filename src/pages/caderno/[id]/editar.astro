@@ -1,0 +1,145 @@
+---
+import Base from '../../../layouts/Base.astro';
+import Moldura from '../../../components/Moldura.astro';
+import Separador from '../../../components/Separador.astro';
+import BarraDoCaderno from '../../../components/caderno/BarraDoCaderno.astro';
+import CamposPublicacao from '../../../components/caderno/CamposPublicacao.astro';
+import { mensagemDeErro, validarPublicacao, type StatusPublicacao } from '../../../lib/caderno';
+import { listarReceitas } from '../../../lib/receitas';
+
+export const prerender = false;
+
+const { supabase, perfil } = Astro.locals;
+const { id = '' } = Astro.params;
+
+if (!supabase || !/^[0-9a-f-]{36}$/i.test(id)) {
+  return new Response(null, { status: 404, statusText: 'Not Found' });
+}
+if (!perfil) return Astro.redirect(`/entrar?proximo=${encodeURIComponent(Astro.url.pathname)}`, 303);
+
+const { data } = await supabase
+  .from('publicacoes')
+  .select('id, autor_id, titulo, texto, prato_slug, status')
+  .eq('id', id)
+  .maybeSingle();
+const publicacao = data as {
+  id: string;
+  autor_id: string;
+  titulo: string;
+  texto: string;
+  prato_slug: string | null;
+  status: StatusPublicacao;
+} | null;
+
+// Só quem escreveu edita; para os outros, a página não existe.
+if (!publicacao || publicacao.autor_id !== perfil.id) {
+  return new Response(null, { status: 404, statusText: 'Not Found' });
+}
+
+const ehAdmin = perfil.papel === 'admin';
+const voltar = `/caderno/${id}`;
+let titulo = publicacao.titulo;
+let texto = publicacao.texto;
+let prato = publicacao.prato_slug ?? '';
+let erro = '';
+
+if (Astro.request.method === 'POST') {
+  const formulario = await Astro.request.formData();
+  titulo = String(formulario.get('titulo') ?? '').trim();
+  texto = String(formulario.get('texto') ?? '').trim();
+  prato = String(formulario.get('prato') ?? '');
+  const slugs = new Set((await listarReceitas()).map((r) => r.id));
+
+  erro = validarPublicacao(titulo, texto);
+  if (!erro) {
+    const { data: status, error } = await supabase.rpc('editar_publicacao', {
+      publicacao: id,
+      novo_titulo: titulo,
+      novo_texto: texto,
+      novo_prato_slug: slugs.has(prato) ? prato : null,
+    });
+    if (error) {
+      erro = mensagemDeErro(error);
+    } else {
+      const ok = status === 'aprovada' ? 'editada' : 'reenviada';
+      return Astro.redirect(`${voltar}?ok=${ok}`, 303);
+    }
+  }
+}
+---
+
+<Base titulo="Editar publicação" descricao="Edite sua publicação no Caderno da cozinha.">
+  <div class="pagina">
+    <BarraDoCaderno />
+    <Moldura>
+      <header class="topo">
+        <p class="versalete rotulo">Caderno da cozinha</p>
+        <h1>Editar publicação</h1>
+        <Separador />
+        <p class="frase">Corrija um detalhe, conte como ficou da segunda vez ou acrescente uma dica.</p>
+      </header>
+
+      <form method="post" class="formulario">
+        <CamposPublicacao titulo={titulo} texto={texto} prato={prato} />
+
+        {erro && <p class="aviso erro" role="alert">{erro}</p>}
+
+        {
+          !ehAdmin && publicacao.status === 'aprovada' && (
+            <p class="aviso">
+              Ao salvar uma mudança, a publicação sai do caderno por um tempinho e volta assim que a edição for lida.
+              As opiniões continuam guardadas.
+            </p>
+          )
+        }
+        {
+          !ehAdmin && publicacao.status === 'recusada' && (
+            <p class="aviso">Ao salvar, a publicação é enviada de novo para leitura.</p>
+          )
+        }
+
+        <div class="acoes">
+          <button class="botao cheio" type="submit">Salvar alterações</button>
+          <a class="botao-texto" href={voltar}>Cancelar</a>
+        </div>
+      </form>
+    </Moldura>
+  </div>
+</Base>
+
+<style>
+  .pagina {
+    display: grid;
+    gap: 1.75rem;
+    max-width: 48rem;
+  }
+
+  .topo {
+    display: grid;
+    justify-items: center;
+    gap: 0.75rem;
+    margin-bottom: 2rem;
+    text-align: center;
+  }
+
+  h1 {
+    font-size: clamp(2rem, 1.4rem + 3vw, 3.25rem);
+  }
+
+  .frase {
+    font-style: italic;
+    color: var(--cor-texto-2);
+  }
+
+  .formulario {
+    display: grid;
+    gap: 1.5rem;
+  }
+
+  .acoes {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 1rem 1.75rem;
+  }
+</style>

@@ -1,0 +1,70 @@
+---
+/** Título, prato e texto de uma publicação: os mesmos campos para escrever e para editar. */
+import { LIMITES } from '../../lib/caderno';
+import { listarReceitas } from '../../lib/receitas';
+
+interface Props {
+  titulo?: string;
+  texto?: string;
+  prato?: string | null;
+}
+
+const { titulo = '', texto = '', prato = '' } = Astro.props;
+const receitas = await listarReceitas();
+---
+
+<div class="campos">
+  <div class="campo">
+    <label for="titulo">Título</label>
+    <input
+      id="titulo"
+      name="titulo"
+      value={titulo}
+      required
+      minlength={LIMITES.titulo.min}
+      maxlength={LIMITES.titulo.max}
+      autocomplete="off"
+    />
+  </div>
+
+  <div class="campo">
+    <label for="prato">Prato do cardápio</label>
+    <select id="prato" name="prato" aria-describedby="dica-prato">
+      <option value="">Nenhum em especial</option>
+      {
+        receitas.map((receita) => (
+          <option value={receita.id} selected={receita.id === prato}>
+            {receita.data.titulo}
+          </option>
+        ))
+      }
+    </select>
+    <p class="dica" id="dica-prato">Opcional: ligue sua publicação a um prato da casa.</p>
+  </div>
+
+  <div class="campo">
+    <label for="texto">Texto</label>
+    <textarea
+      id="texto"
+      name="texto"
+      rows="10"
+      required
+      minlength={LIMITES.texto.min}
+      maxlength={LIMITES.texto.max}
+      aria-describedby="dica-texto">{texto}</textarea>
+    <p class="dica" id="dica-texto">
+      Deixe uma linha em branco para começar outro parágrafo. Dá para usar **negrito** e *itálico*.
+    </p>
+  </div>
+</div>
+
+<style>
+  .campos {
+    display: grid;
+    gap: 1.5rem;
+  }
+
+  .campos .campo + .campo {
+    margin-top: 0;
+  }
+</style>

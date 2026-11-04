@@ -3,7 +3,8 @@ import Base from '../../layouts/Base.astro';
 import Moldura from '../../components/Moldura.astro';
 import Separador from '../../components/Separador.astro';
 import BarraDoCaderno from '../../components/caderno/BarraDoCaderno.astro';
-import { LIMITES, mensagemDeErro } from '../../lib/caderno';
+import CamposPublicacao from '../../components/caderno/CamposPublicacao.astro';
+import { mensagemDeErro, validarPublicacao } from '../../lib/caderno';
 import { listarReceitas } from '../../lib/receitas';
 
 export const prerender = false;
@@ -32,11 +33,8 @@ if (Astro.request.method === 'POST') {
     return Astro.redirect('/', 303);
   }
 
-  if (titulo.length < LIMITES.titulo.min || titulo.length > LIMITES.titulo.max) {
-    erro = `O título precisa ter entre ${LIMITES.titulo.min} e ${LIMITES.titulo.max} caracteres.`;
-  } else if (texto.length < LIMITES.texto.min || texto.length > LIMITES.texto.max) {
-    erro = `O texto precisa ter entre ${LIMITES.texto.min} e ${LIMITES.texto.max} caracteres.`;
-  } else {
+  erro = validarPublicacao(titulo, texto);
+  if (!erro) {
     const { data, error } = await supabase
       .from('publicacoes')
       .insert({ titulo, texto, prato_slug: slugs.has(prato) ? prato : null })
@@ -64,48 +62,7 @@ if (Astro.request.method === 'POST') {
       </header>
 
       <form method="post" class="formulario">
-        <div class="campo">
-          <label for="titulo">Título</label>
-          <input
-            id="titulo"
-            name="titulo"
-            value={titulo}
-            required
-            minlength={LIMITES.titulo.min}
-            maxlength={LIMITES.titulo.max}
-            autocomplete="off"
-          />
-        </div>
-
-        <div class="campo">
-          <label for="prato">Prato do cardápio</label>
-          <select id="prato" name="prato" aria-describedby="dica-prato">
-            <option value="">Nenhum em especial</option>
-            {
-              receitas.map((receita) => (
-                <option value={receita.id} selected={receita.id === prato}>
-                  {receita.data.titulo}
-                </option>
-              ))
-            }
-          </select>
-          <p class="dica" id="dica-prato">Opcional: ligue sua publicação a um prato da casa.</p>
-        </div>
-
-        <div class="campo">
-          <label for="texto">Texto</label>
-          <textarea
-            id="texto"
-            name="texto"
-            rows="10"
-            required
-            minlength={LIMITES.texto.min}
-            maxlength={LIMITES.texto.max}
-            aria-describedby="dica-texto">{texto}</textarea>
-          <p class="dica" id="dica-texto">
-            Deixe uma linha em branco para começar outro parágrafo. Dá para usar **negrito** e *itálico*.
-          </p>
-        </div>
+        <CamposPublicacao titulo={titulo} texto={texto} prato={prato} />
 
         <div class="isca" aria-hidden="true">
           <label for="site">Não preencha este campo</label>
@@ -158,10 +115,6 @@ if (Astro.request.method === 'POST') {
   .formulario {
     display: grid;
     gap: 1.5rem;
-  }
-
-  .formulario .campo + .campo {
-    margin-top: 0;
   }
 
   .acoes {

@@ -57,7 +57,7 @@ async function falha(promessa, trecho) {
 before(async () => {
   db = new PGlite();
   await db.exec(ESBOCO_SUPABASE);
-  for (const arquivo of ['0001_caderno_da_cozinha.sql', '0002_retrato_do_perfil.sql']) {
+  for (const arquivo of ['0001_caderno_da_cozinha.sql', '0002_retrato_do_perfil.sql', '0003_editar_publicacao.sql']) {
     await db.exec(await readFile(new URL(`../migrations/${arquivo}`, import.meta.url), 'utf8'));
   }
 
@@ -209,6 +209,64 @@ describe('publicações', () => {
   test('ninguém apaga a publicação dos outros', async () => {
     const r = await como(BETO, 'delete from public.publicacoes where id = $1', [idDaAna]);
     assert.equal(r.affectedRows, 0);
+  });
+});
+
+describe('editar publicação', () => {
+  const editar = (quem, id, titulo, texto, prato = null) =>
+    como(quem, 'select public.editar_publicacao($1, $2, $3, $4) as status', [id, titulo, texto, prato]);
+  const ler = async (id) =>
+    (await como('dono', 'select titulo, texto, status, publicada_em, editada_em from public.publicacoes where id = $1', [id])).rows[0];
+  let daAna;
+  let doChef;
+
+  before(async () => {
+    daAna = (
+      await como('dono', `insert into public.publicacoes (autor_id, titulo, texto, status, publicada_em)
+        values ($1, 'Risoto', 'Ficou cremoso demais.', 'aprovada', now()) returning id`, [ANA])
+    ).rows[0].id;
+    doChef = (
+      await como(CHEF, `insert into public.publicacoes (titulo, texto) values ('Aviso', 'Cardápio novo chegando.') returning id`)
+    ).rows[0].id;
+  });
+
+  test('anônimo não edita', async () => {
+    await falha(editar(null, daAna, 'Risoto', 'Hackeado aqui'), /permission denied/);
+  });
+
+  test('ninguém edita a publicação dos outros, nem o admin', async () => {
+    await falha(editar(BETO, daAna, 'Risoto', 'Hackeado aqui'), /publicacao_nao_encontrada/);
+    await falha(editar(CHEF, daAna, 'Risoto', 'Hackeado aqui'), /publicacao_nao_encontrada/);
+    assert.equal((await ler(daAna)).texto, 'Ficou cremoso demais.');
+  });
+
+  test('salvar sem mudar nada não tira do caderno', async () => {
+    const { rows } = await editar(ANA, daAna, 'Risoto', 'Ficou cremoso demais.');
+    assert.equal(rows[0].status, 'aprovada');
+    assert.equal((await ler(daAna)).editada_em, null);
+  });
+
+  test('leitor edita e a publicação volta para a aprovação', async () => {
+    const { rows } = await editar(ANA, daAna, 'Risoto de cogumelos', 'Ficou cremoso no ponto certo.');
+    assert.equal(rows[0].status, 'pendente');
+    const depois = await ler(daAna);
+    assert.equal(depois.titulo, 'Risoto de cogumelos');
+    assert.equal(depois.status, 'pendente');
+    assert.equal(depois.publicada_em, null);
+    assert.ok(depois.editada_em);
+  });
+
+  test('o admin edita a própria e ela continua no caderno', async () => {
+    const { rows } = await editar(CHEF, doChef, 'Aviso', 'Cardápio novo chegando na sexta.');
+    assert.equal(rows[0].status, 'aprovada');
+    const depois = await ler(doChef);
+    assert.equal(depois.status, 'aprovada');
+    assert.ok(depois.publicada_em);
+    assert.ok(depois.editada_em);
+  });
+
+  test('as regras de tamanho valem na edição', async () => {
+    await falha(editar(ANA, daAna, 'Oi', 'curto'), /check constraint/);
   });
 });
 

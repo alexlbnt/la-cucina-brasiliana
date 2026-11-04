@@ -26,6 +26,7 @@ export interface Publicacao {
   status: StatusPublicacao;
   criada_em: string;
   publicada_em: string | null;
+  editada_em: string | null;
   autor: Autor | null;
 }
 
@@ -53,6 +54,17 @@ export const LIMITES = {
 
 export const POR_PAGINA = 10;
 
+/** Confere título e texto de uma publicação; devolve a mensagem de erro ou ''. */
+export function validarPublicacao(titulo: string, texto: string): string {
+  if (titulo.length < LIMITES.titulo.min || titulo.length > LIMITES.titulo.max) {
+    return `O título precisa ter entre ${LIMITES.titulo.min} e ${LIMITES.titulo.max} caracteres.`;
+  }
+  if (texto.length < LIMITES.texto.min || texto.length > LIMITES.texto.max) {
+    return `O texto precisa ter entre ${LIMITES.texto.min} e ${LIMITES.texto.max} caracteres.`;
+  }
+  return '';
+}
+
 /**
  * Colunas usadas no mural e na página da publicação. Com `autorObrigatorio`,
  * o autor vira inner join, para filtrar pelo papel de quem escreveu.
@@ -60,7 +72,7 @@ export const POR_PAGINA = 10;
 export function colunasPublicacao({ autorObrigatorio = false, comOpinioes = false } = {}): string {
   const autor = `autor:perfis${autorObrigatorio ? '!inner' : ''}(nome, papel, retrato)`;
   const opinioes = comOpinioes ? ', opinioes(count)' : '';
-  return `id, autor_id, titulo, texto, prato_slug, status, criada_em, publicada_em, ${autor}${opinioes}`;
+  return `id, autor_id, titulo, texto, prato_slug, status, criada_em, publicada_em, editada_em, ${autor}${opinioes}`;
 }
 
 const formatoData = new Intl.DateTimeFormat('pt-BR', {
@@ -79,6 +91,9 @@ export function mensagemDeErro(erro: { message?: string } | null | undefined): s
   const texto = erro?.message ?? '';
   if (texto.includes('limite_diario')) {
     return 'Você chegou ao limite de envios de hoje. Volte amanhã!';
+  }
+  if (texto.includes('publicacao_nao_encontrada')) {
+    return 'Essa publicação não existe mais ou não é sua.';
   }
   if (texto.includes('row-level security')) {
     return 'Você não tem permissão para fazer isso.';

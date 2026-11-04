@@ -7,6 +7,7 @@ import BarraDoCaderno from '../../components/caderno/BarraDoCaderno.astro';
 import {
   LIMITES,
   colunasPublicacao,
+  formatarData,
   mensagemDeErro,
   type Opiniao,
   type Publicacao,
@@ -36,6 +37,8 @@ const MENSAGENS: Record<string, string> = {
   recusada: 'Publicação recusada.',
   enviada: 'Recebemos sua publicação! Ela aparece no caderno assim que for aprovada.',
   publicada: 'Sua publicação já está no caderno.',
+  editada: 'Publicação atualizada.',
+  reenviada: 'Publicação atualizada. Ela volta a aparecer no caderno assim que a edição for lida.',
 };
 
 let erroOpiniao = '';
@@ -199,21 +202,35 @@ const deuErro = Astro.url.searchParams.has('erro');
           )
         }
         <Assinatura autor={publicacao.autor} data={publicacao.publicada_em ?? publicacao.criada_em} tamanho={40} />
+        {
+          publicacao.editada_em && (
+            <p class="editada">
+              Editada em <time datetime={publicacao.editada_em}>{formatarData(publicacao.editada_em)}</time>
+            </p>
+          )
+        }
       </header>
       <Separador />
       <div class="texto-livre corpo" set:html={formatarTexto(publicacao.texto)} />
 
       {
         (ehAutor || ehAdmin) && (
-          <details class="apagar">
-            <summary class="botao-texto">Apagar publicação</summary>
-            <form method="post">
-              <p>Isso apaga a publicação e todas as opiniões dela. Não dá para desfazer.</p>
-              <button class="botao" type="submit" name="acao" value="apagar-publicacao">
-                Sim, apagar
-              </button>
-            </form>
-          </details>
+          <div class="acoes-publicacao">
+            {ehAutor && (
+              <a class="botao-texto" href={`/caderno/${publicacao.id}/editar`}>
+                Editar publicação
+              </a>
+            )}
+            <details class="apagar">
+              <summary class="botao-texto">Apagar publicação</summary>
+              <form method="post">
+                <p>Isso apaga a publicação e todas as opiniões dela. Não dá para desfazer.</p>
+                <button class="botao" type="submit" name="acao" value="apagar-publicacao">
+                  Sim, apagar
+                </button>
+              </form>
+            </details>
+          </div>
         )
       }
     </Moldura>
@@ -364,11 +381,26 @@ const deuErro = Astro.url.searchParams.has('erro');
     margin: 2rem auto 0;
   }
 
-  .apagar {
+  .editada {
+    margin-top: -0.25rem;
+    font-size: 0.95rem;
+    font-style: italic;
+    color: var(--cor-texto-3);
+  }
+
+  .acoes-publicacao {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 0 2rem;
     max-width: var(--largura-texto);
     margin: 2.5rem auto 0;
     padding-top: 1rem;
     border-top: 1px solid var(--cor-borda);
+  }
+
+  .apagar[open] {
+    flex-basis: 100%;
   }
 
   .apagar summary {
