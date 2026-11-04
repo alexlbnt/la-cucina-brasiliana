@@ -1,5 +1,6 @@
 ---
 /** Situação da sessão no topo do Caderno: entrar, ou conta / moderar / sair. */
+import Retrato from './Retrato.astro';
 interface Props {
   /** Para onde voltar depois do login. */
   proximo?: string;
@@ -13,8 +14,11 @@ const { perfil } = Astro.locals;
   {
     perfil ? (
       <>
-        <p>
-          Você entrou como <strong>{perfil.nome}</strong>.
+        <p class="quem">
+          <Retrato nome={perfil.nome} retrato={perfil.retrato} tamanho={28} />
+          <span>
+            Você entrou como <strong>{perfil.nome}</strong>.
+          </span>
         </p>
         <ul>
           <li>
@@ -58,6 +62,12 @@ const { perfil } = Astro.locals;
     border-block: 1px solid var(--cor-borda);
     font-size: 1rem;
     color: var(--cor-texto-2);
+  }
+
+  .quem {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
   }
 
   strong {

@@ -1,0 +1,60 @@
+---
+/**
+ * Retrato de quem escreve: o desenho do Esgabilado escolhido na conta ou,
+ * sem escolha, as iniciais (Monograma). Decorativo por padrão, já que o nome
+ * aparece ao lado; com `titulo`, vira imagem acessível.
+ */
+import Monograma from './Monograma.astro';
+import { RETRATO_VIEWBOX, ehRetrato, tracosRetrato } from '../../lib/retratos';
+
+interface Props {
+  nome: string;
+  retrato: string | null | undefined;
+  tamanho?: number;
+  titulo?: string;
+  class?: string;
+}
+
+const { nome, retrato, tamanho = 40, titulo, class: classe } = Astro.props;
+const acessivel = titulo
+  ? { role: 'img' as const, 'aria-label': titulo }
+  : { 'aria-hidden': 'true' as const };
+---
+
+{
+  ehRetrato(retrato) ? (
+    <span class:list={['retrato', classe]} style={`--tamanho:${tamanho}px`} {...acessivel}>
+      <svg
+        viewBox={RETRATO_VIEWBOX}
+        fill="none"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+        aria-hidden="true"
+        focusable="false"
+      >
+        <Fragment set:html={tracosRetrato(retrato, 'var(--cor-destaque)', 'var(--cor-rotulo)')} />
+      </svg>
+    </span>
+  ) : (
+    <Monograma nome={nome} tamanho={tamanho} />
+  )
+}
+
+<style>
+  .retrato {
+    display: inline-block;
+    flex-shrink: 0;
+    width: var(--tamanho);
+    height: var(--tamanho);
+    overflow: hidden;
+    border: 1px solid var(--cor-destaque);
+    border-radius: 50%;
+    background: var(--cor-cartao);
+    forced-color-adjust: none;
+  }
+
+  .retrato svg {
+    width: 100%;
+    height: 100%;
+  }
+</style>

@@ -23,7 +23,7 @@ export const onRequest = defineMiddleware(async (contexto, proximo) => {
   } = await supabase.auth.getUser();
 
   if (user) {
-    const { data } = await supabase.from('perfis').select('id, nome, papel').eq('id', user.id).maybeSingle();
+    const { data } = await supabase.from('perfis').select('id, nome, papel, retrato').eq('id', user.id).maybeSingle();
     contexto.locals.perfil = (data as Perfil | null) ?? null;
   }
 

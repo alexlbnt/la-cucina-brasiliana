@@ -1,6 +1,10 @@
 ---
-/** Quem escreveu e quando, com a marca "do cozinheiro" para o admin. */
-import Monograma from './Monograma.astro';
+/**
+ * Quem escreveu e quando, com a marca "do cozinheiro" para o admin.
+ * Mostra o retrato escolhido; sem retrato, o admin ganha o ratinho da casa
+ * e os demais, as iniciais.
+ */
+import Retrato from './Retrato.astro';
 import Ratinho from '../Ratinho.astro';
 import { formatarData, type Autor } from '../../lib/caderno';
 
@@ -16,7 +20,13 @@ const doCozinheiro = autor?.papel === 'admin';
 ---
 
 <p class="assinatura">
-  {doCozinheiro ? <Ratinho tamanho={tamanho} /> : <Monograma nome={nome} tamanho={tamanho} />}
+  {
+    doCozinheiro && !autor?.retrato ? (
+      <Ratinho tamanho={tamanho} />
+    ) : (
+      <Retrato nome={nome} retrato={autor?.retrato} tamanho={tamanho} />
+    )
+  }
   <span class="quem">
     <span class="nome">{nome}</span>
     {doCozinheiro && <span class="versalete selo-cozinheiro">do cozinheiro</span>}

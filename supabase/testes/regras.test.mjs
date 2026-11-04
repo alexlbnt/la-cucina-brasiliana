@@ -57,11 +57,9 @@ async function falha(promessa, trecho) {
 before(async () => {
   db = new PGlite();
   await db.exec(ESBOCO_SUPABASE);
-  const migracao = await readFile(
-    new URL('../migrations/0001_caderno_da_cozinha.sql', import.meta.url),
-    'utf8',
-  );
-  await db.exec(migracao);
+  for (const arquivo of ['0001_caderno_da_cozinha.sql', '0002_retrato_do_perfil.sql']) {
+    await db.exec(await readFile(new URL(`../migrations/${arquivo}`, import.meta.url), 'utf8'));
+  }
 
   await db.query(
     `insert into auth.users (id, email, raw_user_meta_data) values
@@ -100,6 +98,35 @@ describe('perfis', () => {
     assert.equal(outro.affectedRows, 0);
     const { rows } = await como('dono', 'select nome from public.perfis where id = $1', [BETO]);
     assert.equal(rows[0].nome, 'beto');
+  });
+});
+
+describe('retrato', () => {
+  test('nasce vazio (mostra as iniciais)', async () => {
+    const { rows } = await como('dono', 'select retrato from public.perfis where id = $1', [ANA]);
+    assert.equal(rows[0].retrato, null);
+  });
+
+  test('cada um escolhe o próprio retrato, e só entre os desenhos da casa', async () => {
+    await como(ANA, `update public.perfis set retrato = 'chef' where id = $1`, [ANA]);
+    await falha(
+      como(ANA, `update public.perfis set retrato = 'https://exemplo.com/foto.png' where id = $1`, [ANA]),
+      /check constraint/,
+    );
+    const outro = await como(ANA, `update public.perfis set retrato = 'soneca' where id = $1`, [BETO]);
+    assert.equal(outro.affectedRows, 0);
+
+    const { rows } = await como(null, 'select id, retrato from public.perfis where id in ($1, $2) order by id', [ANA, BETO]);
+    assert.deepEqual(
+      rows.map((r) => r.retrato),
+      ['chef', null],
+    );
+  });
+
+  test('voltar para as iniciais', async () => {
+    await como(ANA, `update public.perfis set retrato = null where id = $1`, [ANA]);
+    const { rows } = await como('dono', 'select retrato from public.perfis where id = $1', [ANA]);
+    assert.equal(rows[0].retrato, null);
   });
 });
 

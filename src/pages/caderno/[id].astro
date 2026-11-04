@@ -122,7 +122,7 @@ if (!publicacao) return new Response(null, { status: 404, statusText: 'Not Found
 
 const { data: dadosOpinioes } = await supabase
   .from('opinioes')
-  .select('id, publicacao_id, autor_id, texto, oculta, criada_em, autor:perfis(nome, papel)')
+  .select('id, publicacao_id, autor_id, texto, oculta, criada_em, autor:perfis(nome, papel, retrato)')
   .eq('publicacao_id', id)
   .order('criada_em', { ascending: true });
 const opinioes = (dadosOpinioes as Opiniao[] | null) ?? [];

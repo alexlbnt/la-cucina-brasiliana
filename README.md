@@ -75,17 +75,17 @@ O mural da página inicial. Qualquer pessoa lê. Para escrever ou opinar, é pre
 - **Publicações** passam por aprovação antes de aparecer. As suas (admin) entram direto, em destaque, como "Da cozinha".
 - **Opiniões** aparecem na hora. Qualquer pessoa logada pode denunciar uma opinião, e você decide em **Moderar** se ela é ocultada ou mantida.
 - **Limites contra spam:** cada pessoa pode enviar 3 publicações e 30 opiniões por dia. Um campo-isca invisível barra robôs.
-- **Minha conta:** cada pessoa muda o próprio nome, acompanha as próprias publicações e pode apagar a conta com tudo o que escreveu.
+- **Minha conta:** cada pessoa muda o próprio nome, escolhe um dos 10 retratos do Esgabilado (desenhados em SVG em `src/lib/retratos.ts`; sem escolha, aparecem as iniciais), acompanha as próprias publicações e pode apagar a conta com tudo o que escreveu.
 - **Privacidade:** o site guarda só nome, e-mail (nunca exibido) e o que a pessoa escreve. A foto da conta Google não é guardada nem carregada. As páginas `/privacidade` e `/termos` trazem o e-mail de contato e a data de atualização no topo do arquivo; atualize os dois se algo mudar.
 
-Toda a segurança está no banco. As regras de acesso (RLS) ficam em `supabase/migrations/0001_caderno_da_cozinha.sql` e são testadas com `npm run testar`.
+Toda a segurança está no banco. As regras de acesso (RLS) ficam em `supabase/migrations/` e são testadas com `npm run testar`.
 
 ### Ligar o Caderno (só uma vez)
 
 **1. Criar o banco no Supabase**
 
 1. Crie uma conta e um projeto em [supabase.com](https://supabase.com). O plano gratuito basta.
-2. No projeto, abra **SQL Editor → New query**, cole todo o conteúdo de `supabase/migrations/0001_caderno_da_cozinha.sql` e clique em **Run**.
+2. No projeto, abra **SQL Editor → New query**, cole todo o conteúdo de `supabase/migrations/0001_caderno_da_cozinha.sql` e clique em **Run**. Depois, numa nova query, faça o mesmo com `0002_retrato_do_perfil.sql` (os arquivos rodam em ordem, cada um uma vez só).
 
 **2. Ativar o login com Google**
 

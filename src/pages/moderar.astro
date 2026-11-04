@@ -68,7 +68,7 @@ interface DenunciaComOpiniao {
 
 const { data: dadosDenuncias } = await supabase
   .from('denuncias')
-  .select('opiniao_id, opiniao:opinioes(id, texto, criada_em, publicacao_id, autor:perfis(nome, papel))')
+  .select('opiniao_id, opiniao:opinioes(id, texto, criada_em, publicacao_id, autor:perfis(nome, papel, retrato))')
   .eq('resolvida', false);
 
 // Agrupa as denúncias por opinião, com a contagem.

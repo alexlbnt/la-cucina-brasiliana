@@ -3,7 +3,9 @@ import Base from '../layouts/Base.astro';
 import Moldura from '../components/Moldura.astro';
 import Separador from '../components/Separador.astro';
 import Monograma from '../components/caderno/Monograma.astro';
+import Retrato from '../components/caderno/Retrato.astro';
 import { LIMITES, formatarData, mensagemDeErro, type StatusPublicacao } from '../lib/caderno';
+import { IDS_RETRATO, ehRetrato, infoRetrato } from '../lib/retratos';
 
 export const prerender = false;
 
@@ -13,16 +15,33 @@ if (!perfil) return Astro.redirect(`/entrar?proximo=${encodeURIComponent(Astro.u
 
 const MENSAGENS: Record<string, string> = {
   nome: 'Nome atualizado.',
+  retrato: 'Retrato atualizado. É assim que você aparece no caderno.',
   apagada: 'Publicação apagada.',
 };
 
 let nome = perfil.nome;
+let retrato = ehRetrato(perfil.retrato) ? perfil.retrato : null;
 let erroNome = '';
+let erroRetrato = '';
 let erroConta = '';
 
 if (Astro.request.method === 'POST') {
   const formulario = await Astro.request.formData();
   const acao = String(formulario.get('acao') ?? '');
+
+  if (acao === 'retrato') {
+    const escolhido = String(formulario.get('retrato') ?? '');
+    if (escolhido !== '' && !ehRetrato(escolhido)) {
+      erroRetrato = 'Escolha um dos retratos da lista.';
+    } else {
+      const { error } = await supabase
+        .from('perfis')
+        .update({ retrato: escolhido || null })
+        .eq('id', perfil.id);
+      if (error) erroRetrato = mensagemDeErro(error);
+      else return Astro.redirect('/conta?ok=retrato', 303);
+    }
+  }
 
   if (acao === 'nome') {
     nome = String(formulario.get('nome') ?? '').trim();
@@ -50,11 +69,15 @@ if (Astro.request.method === 'POST') {
   }
 }
 
-const { data } = await supabase
-  .from('publicacoes')
-  .select('id, titulo, status, criada_em')
-  .eq('autor_id', perfil.id)
-  .order('criada_em', { ascending: false });
+const [{ data }, { data: desde }, { count: totalOpinioes }] = await Promise.all([
+  supabase
+    .from('publicacoes')
+    .select('id, titulo, status, criada_em')
+    .eq('autor_id', perfil.id)
+    .order('criada_em', { ascending: false }),
+  supabase.from('perfis').select('criado_em').eq('id', perfil.id).maybeSingle(),
+  supabase.from('opinioes').select('id', { count: 'exact', head: true }).eq('autor_id', perfil.id),
+]);
 
 const minhas = (data ?? []) as { id: string; titulo: string; status: StatusPublicacao; criada_em: string }[];
 const ROTULO_STATUS: Record<StatusPublicacao, string> = {
@@ -62,6 +85,13 @@ const ROTULO_STATUS: Record<StatusPublicacao, string> = {
   aprovada: 'No caderno',
   recusada: 'Recusada',
 };
+const numeros = [
+  { valor: minhas.filter((p) => p.status === 'aprovada').length, rotulo: ['no caderno', 'no caderno'] },
+  { valor: minhas.filter((p) => p.status === 'pendente').length, rotulo: ['aguardando', 'aguardando'] },
+  { valor: totalOpinioes ?? 0, rotulo: ['opinião', 'opiniões'] },
+];
+const criadoEm = (desde as { criado_em: string } | null)?.criado_em;
+const ehAdmin = perfil.papel === 'admin';
 const ok = MENSAGENS[Astro.url.searchParams.get('ok') ?? ''];
 ---
 
@@ -69,16 +99,90 @@ const ok = MENSAGENS[Astro.url.searchParams.get('ok') ?? ''];
   <div class="pagina">
     <Moldura>
       <header class="topo">
-        <Monograma nome={perfil.nome} tamanho={64} />
-        <p class="versalete rotulo">Caderno da cozinha</p>
-        <h1>Minha conta</h1>
+        <p class="versalete rotulo">Minha conta</p>
+
+        <div class="destaque">
+          <span data-previa-desenho hidden={!retrato}>
+            {retrato && <Retrato nome={perfil.nome} retrato={retrato} tamanho={132} />}
+          </span>
+          <span data-previa-iniciais hidden={!!retrato}>
+            <Monograma nome={perfil.nome} tamanho={132} />
+          </span>
+        </div>
+        <a class="botao-texto" href="#retrato">Trocar retrato</a>
+
+        <h1>{perfil.nome}</h1>
+        <p class="desde">
+          {ehAdmin && <span class="versalete selo">do cozinheiro</span>}
+          {criadoEm && <span>No caderno desde {formatarData(criadoEm)}</span>}
+        </p>
+
         <Separador />
+
+        <dl class="numeros">
+          {
+            numeros.map(({ valor, rotulo }) => (
+              <div>
+                <dt class="versalete">{valor === 1 ? rotulo[0] : rotulo[1]}</dt>
+                <dd>{valor}</dd>
+              </div>
+            ))
+          }
+        </dl>
       </header>
 
       {ok && <p class="aviso" role="status">{ok}</p>}
 
+      <section id="retrato" aria-labelledby="titulo-retrato">
+        <div class="cabeca-secao">
+          <h2 id="titulo-retrato" class="versalete rotulo">Seu retrato</h2>
+          <p class="dica">
+            Escolha como o Esgabilado vai representar você. O retrato aparece ao lado do seu nome nas publicações e
+            opiniões.
+          </p>
+        </div>
+
+        <form method="post" class="form-retrato" data-form-retrato data-salvo={retrato ?? ''}>
+          <input type="hidden" name="acao" value="retrato" />
+          <fieldset>
+            <legend class="apenas-leitor">Retrato</legend>
+            <div class="opcoes">
+              {
+                IDS_RETRATO.map((id) => {
+                  const { nome: nomeRetrato, descricao } = infoRetrato(id);
+                  return (
+                    <label class="opcao">
+                      <input type="radio" name="retrato" value={id} checked={retrato === id} class="apenas-leitor" />
+                      <Retrato nome={perfil.nome} retrato={id} tamanho={88} class="opcao-desenho" />
+                      <span class="opcao-nome">
+                        {nomeRetrato}
+                        <span class="apenas-leitor">: {descricao}</span>
+                      </span>
+                    </label>
+                  );
+                })
+              }
+            </div>
+            <label class="opcao-iniciais">
+              <input type="radio" name="retrato" value="" checked={!retrato} />
+              <Monograma nome={perfil.nome} tamanho={30} />
+              <span>Prefiro só as minhas iniciais</span>
+            </label>
+          </fieldset>
+
+          {erroRetrato && <p class="aviso erro" role="alert">{erroRetrato}</p>}
+          <div class="acoes">
+            <button class="botao cheio" type="submit">Salvar retrato</button>
+            <p class="nao-salvo" data-nao-salvo hidden>A prévia lá em cima já mudou. Salve para usar no caderno.</p>
+          </div>
+        </form>
+      </section>
+
       <section aria-labelledby="titulo-nome">
-        <h2 id="titulo-nome" class="versalete rotulo">Seu nome no caderno</h2>
+        <div class="cabeca-secao">
+          <h2 id="titulo-nome" class="versalete rotulo">Seu nome no caderno</h2>
+          <p class="dica">É o nome que assina suas publicações e opiniões.</p>
+        </div>
         <form method="post" class="linha">
           <input type="hidden" name="acao" value="nome" />
           <div class="campo">
@@ -94,36 +198,43 @@ const ok = MENSAGENS[Astro.url.searchParams.get('ok') ?? ''];
               aria-invalid={erroNome ? 'true' : undefined}
             />
           </div>
-          <button class="botao" type="submit">Salvar</button>
+          <button class="botao" type="submit">Salvar nome</button>
         </form>
         {erroNome && <p class="aviso erro" role="alert">{erroNome}</p>}
       </section>
 
       <section aria-labelledby="titulo-minhas">
-        <h2 id="titulo-minhas" class="versalete rotulo">Suas publicações</h2>
+        <div class="cabeca-secao">
+          <h2 id="titulo-minhas" class="versalete rotulo">Suas publicações</h2>
+        </div>
         {
           minhas.length === 0 ? (
             <p class="vazio">
               Você ainda não escreveu no caderno. <a href="/caderno/escrever">Que tal começar?</a>
             </p>
           ) : (
-            <ul class="minhas">
-              {minhas.map((p) => (
-                <li>
-                  <a href={`/caderno/${p.id}`}>{p.titulo}</a>
-                  <span class="detalhes">
-                    <span class:list={['versalete', 'status', p.status]}>{ROTULO_STATUS[p.status]}</span>
-                    <time datetime={p.criada_em}>{formatarData(p.criada_em)}</time>
-                  </span>
-                </li>
-              ))}
-            </ul>
+            <>
+              <ul class="minhas">
+                {minhas.map((p) => (
+                  <li>
+                    <a href={`/caderno/${p.id}`}>{p.titulo}</a>
+                    <span class="detalhes">
+                      <span class:list={['versalete', 'status', p.status]}>{ROTULO_STATUS[p.status]}</span>
+                      <time datetime={p.criada_em}>{formatarData(p.criada_em)}</time>
+                    </span>
+                  </li>
+                ))}
+              </ul>
+              <a class="botao escrever" href="/caderno/escrever">Escrever no caderno</a>
+            </>
           )
         }
       </section>
 
       <section aria-labelledby="titulo-sessao" class="sessao">
-        <h2 id="titulo-sessao" class="versalete rotulo">Sessão e dados</h2>
+        <div class="cabeca-secao">
+          <h2 id="titulo-sessao" class="versalete rotulo">Sessão e dados</h2>
+        </div>
         <form method="post" action="/api/auth/sair">
           <button class="botao" type="submit">Sair</button>
         </form>
@@ -151,33 +262,234 @@ const ok = MENSAGENS[Astro.url.searchParams.get('ok') ?? ''];
 
 <style>
   .pagina {
-    max-width: 44rem;
+    max-width: 50rem;
   }
+
+  /* ---------- Topo ---------- */
 
   .topo {
     display: grid;
     justify-items: center;
     gap: 0.75rem;
-    margin-bottom: 2rem;
+    margin-bottom: 2.5rem;
     text-align: center;
+  }
+
+  /* Moldura dupla em volta do retrato, como a da página */
+  .destaque {
+    margin-top: 0.5rem;
+    padding: 5px;
+    border: 2px solid var(--cor-destaque);
+    border-radius: 50%;
+  }
+
+  .destaque > span {
+    display: block;
+  }
+
+  .destaque > [hidden] {
+    display: none;
   }
 
   h1 {
     font-size: clamp(2rem, 1.4rem + 3vw, 3rem);
+    overflow-wrap: anywhere;
   }
+
+  .desde {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    align-items: baseline;
+    gap: 0.25rem 1rem;
+    font-style: italic;
+    color: var(--cor-texto-3);
+  }
+
+  .selo {
+    font-style: normal;
+    font-size: 0.6875rem;
+    letter-spacing: 0.3em;
+    color: var(--cor-rotulo);
+  }
+
+  .numeros {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    width: 100%;
+    margin: 0.5rem 0 0;
+  }
+
+  .numeros div {
+    display: flex;
+    flex-direction: column-reverse;
+    justify-content: flex-end;
+    gap: 0.35rem;
+    padding: 0.25rem 0.5rem;
+  }
+
+  .numeros div + div {
+    border-left: 1px solid var(--cor-borda);
+  }
+
+  .numeros dd {
+    margin: 0;
+    font-family: var(--fonte-titulo);
+    font-size: clamp(1.75rem, 1.3rem + 2vw, 2.5rem);
+    font-weight: 700;
+    line-height: 1;
+    color: var(--cor-destaque);
+  }
+
+  .numeros dt {
+    font-size: 0.625rem;
+    letter-spacing: 0.22em;
+    color: var(--cor-texto-3);
+  }
+
+  /* ---------- Seções ---------- */
 
   section {
     display: grid;
-    gap: 1rem;
+    gap: 1.25rem;
+    scroll-margin-top: 1.5rem;
   }
 
   section + section {
-    margin-top: 2.5rem;
+    margin-top: 2.75rem;
+    padding-top: 2.75rem;
+    border-top: 1px solid var(--cor-borda);
+  }
+
+  .cabeca-secao {
+    display: grid;
+    gap: 0.35rem;
   }
 
   h2.versalete {
     font-weight: 500;
   }
+
+  .dica {
+    font-style: italic;
+    color: var(--cor-texto-3);
+  }
+
+  /* ---------- Escolha do retrato ---------- */
+
+  fieldset {
+    margin: 0;
+    padding: 0;
+    border: 0;
+    min-width: 0;
+    container-type: inline-size;
+  }
+
+  .opcoes {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.75rem;
+  }
+
+  .opcao {
+    position: relative;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.4rem;
+    cursor: pointer;
+  }
+
+  .opcao :global(.opcao-desenho) {
+    width: 3.5rem;
+    height: 3.5rem;
+    transition: transform 0.15s ease, box-shadow 0.15s ease;
+  }
+
+  .opcao-nome {
+    font-size: 1rem;
+    line-height: 1.25;
+    color: var(--cor-texto-2);
+  }
+
+  @container (min-width: 30rem) {
+    .opcoes {
+      grid-template-columns: repeat(5, minmax(0, 1fr));
+      gap: 1.25rem 0.75rem;
+    }
+
+    .opcao {
+      flex-direction: column;
+      gap: 0.5rem;
+      padding: 0.25rem;
+      text-align: center;
+    }
+
+    .opcao :global(.opcao-desenho) {
+      width: 100%;
+      max-width: 6rem;
+      height: auto;
+      aspect-ratio: 1;
+    }
+  }
+
+  .opcao:hover :global(.opcao-desenho) {
+    transform: translateY(-2px);
+  }
+
+  /* Escolhido: a moldura dupla da casa em volta do retrato */
+  .opcao input:checked + :global(.opcao-desenho) {
+    border-width: 2px;
+    box-shadow:
+      0 0 0 3px var(--cor-fundo),
+      0 0 0 4.5px var(--cor-destaque);
+  }
+
+  .opcao input:checked ~ .opcao-nome {
+    font-weight: 600;
+    color: var(--cor-destaque);
+  }
+
+  .opcao input:focus-visible + :global(.opcao-desenho) {
+    outline: 2px dashed var(--cor-destaque);
+    outline-offset: 8px;
+  }
+
+  .opcao-iniciais {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    width: fit-content;
+    margin-top: 1.25rem;
+    color: var(--cor-texto-2);
+    cursor: pointer;
+  }
+
+  .opcao-iniciais input {
+    width: 1.1rem;
+    height: 1.1rem;
+    margin: 0;
+    accent-color: var(--cor-destaque);
+  }
+
+  .form-retrato {
+    display: grid;
+    gap: 1.25rem;
+  }
+
+  .acoes {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.75rem 1.25rem;
+  }
+
+  .nao-salvo {
+    font-style: italic;
+    color: var(--cor-rotulo);
+  }
+
+  /* ---------- Nome ---------- */
 
   .linha {
     display: flex;
@@ -189,6 +501,8 @@ const ok = MENSAGENS[Astro.url.searchParams.get('ok') ?? ''];
   .linha .campo {
     flex: 1 1 14rem;
   }
+
+  /* ---------- Publicações ---------- */
 
   .vazio {
     font-style: italic;
@@ -206,6 +520,11 @@ const ok = MENSAGENS[Astro.url.searchParams.get('ok') ?? ''];
     gap: 0.2rem;
     padding-block: 0.85rem;
     border-top: 1px solid var(--cor-borda);
+  }
+
+  .minhas li:first-child {
+    border-top: 0;
+    padding-top: 0;
   }
 
   .minhas a {
@@ -235,6 +554,12 @@ const ok = MENSAGENS[Astro.url.searchParams.get('ok') ?? ''];
   time {
     font-style: italic;
   }
+
+  .escrever {
+    justify-self: start;
+  }
+
+  /* ---------- Sessão ---------- */
 
   .sessao form {
     justify-self: start;
@@ -276,3 +601,29 @@ const ok = MENSAGENS[Astro.url.searchParams.get('ok') ?? ''];
     color: var(--cor-texto-3);
   }
 </style>
+
+<script>
+  // Prévia ao vivo: o retrato do topo acompanha a escolha antes de salvar.
+  const form = document.querySelector<HTMLFormElement>('[data-form-retrato]');
+  const desenho = document.querySelector<HTMLElement>('[data-previa-desenho]');
+  const iniciais = document.querySelector<HTMLElement>('[data-previa-iniciais]');
+  const naoSalvo = document.querySelector<HTMLElement>('[data-nao-salvo]');
+
+  form?.addEventListener('change', (evento) => {
+    const escolha = evento.target;
+    if (!(escolha instanceof HTMLInputElement) || escolha.name !== 'retrato' || !desenho || !iniciais) return;
+
+    if (escolha.value) {
+      const original = escolha.closest('label')?.querySelector<HTMLElement>('.retrato');
+      if (original) {
+        const copia = original.cloneNode(true) as HTMLElement;
+        copia.classList.remove('opcao-desenho');
+        copia.style.setProperty('--tamanho', '132px');
+        desenho.replaceChildren(copia);
+      }
+    }
+    desenho.hidden = !escolha.value;
+    iniciais.hidden = Boolean(escolha.value);
+    if (naoSalvo) naoSalvo.hidden = escolha.value === (form.dataset.salvo ?? '');
+  });
+</script>

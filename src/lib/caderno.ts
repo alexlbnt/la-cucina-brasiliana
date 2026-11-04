@@ -7,11 +7,14 @@ export interface Perfil {
   id: string;
   nome: string;
   papel: Papel;
+  /** Id de um desenho de src/lib/retratos.ts; null mostra as iniciais. */
+  retrato: string | null;
 }
 
 export interface Autor {
   nome: string;
   papel: Papel;
+  retrato: string | null;
 }
 
 export interface Publicacao {
@@ -55,7 +58,7 @@ export const POR_PAGINA = 10;
  * o autor vira inner join, para filtrar pelo papel de quem escreveu.
  */
 export function colunasPublicacao({ autorObrigatorio = false, comOpinioes = false } = {}): string {
-  const autor = `autor:perfis${autorObrigatorio ? '!inner' : ''}(nome, papel)`;
+  const autor = `autor:perfis${autorObrigatorio ? '!inner' : ''}(nome, papel, retrato)`;
   const opinioes = comOpinioes ? ', opinioes(count)' : '';
   return `id, autor_id, titulo, texto, prato_slug, status, criada_em, publicada_em, ${autor}${opinioes}`;
 }
