@@ -71,26 +71,6 @@ const jsonLd = JSON.stringify(dadosEstruturados).replace(/</g, '\\u003c');
         <Separador />
       </header>
 
-      <!-- Precisam de JavaScript: aparecem só quando o script da página roda -->
-      <div class="acoes" data-acoes hidden>
-        <div class="botoes">
-          <button type="button" class="botao cheio entrar" data-entrar aria-describedby="dica-cozinha">
-            <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true">
-              <path d="M4 11h16v2.5a6 6 0 0 1-6 6h-4a6 6 0 0 1-6-6V11ZM2 11h2M20 11h2M9 7.5c0-1 1-1.5 1-2.5M13 7.5c0-1 1-1.5 1-2.5" />
-            </svg>
-            Modo cozinha
-          </button>
-          <button type="button" class="botao guardar" data-guardar aria-pressed="false">
-            <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true">
-              <path d="M6.5 3.5h11v17L12 16.25 6.5 20.5v-17Z" />
-            </svg>
-            <span data-guardar-rotulo>Guardar receita</span>
-          </button>
-        </div>
-        <p class="dica-acoes" id="dica-cozinha">Tela sempre acesa, letra grande e, se quiser, um passo por vez.</p>
-        <p class="aviso-guardar" data-aviso-guardar role="status"></p>
-      </div>
-
       <div class="foto">
         {foto ? <img src={foto} alt={titulo} loading="lazy" decoding="async" /> : <FotoReservada />}
       </div>
@@ -117,7 +97,7 @@ const jsonLd = JSON.stringify(dadosEstruturados).replace(/</g, '\\u003c');
               ingredientes.map((item, i) => (
                 <li data-item-ingrediente={i}>
                   <label class="marcavel">
-                    <input type="checkbox" class="caixa" data-ingrediente={i} />
+                    <input type="checkbox" class="caixa" data-ingrediente={i} disabled />
                     <span class="texto">{item}</span>
                   </label>
                 </li>
@@ -139,7 +119,7 @@ const jsonLd = JSON.stringify(dadosEstruturados).replace(/</g, '\\u003c');
               preparo.map((passo, i) => (
                 <li id={`passo-${i + 1}`} data-passo={i}>
                   <label class="marcavel">
-                    <input type="checkbox" class="apenas-leitor" data-marca-passo={i} />
+                    <input type="checkbox" class="apenas-leitor" data-marca-passo={i} disabled />
                     <span class="numero" aria-hidden="true">
                       <span class="algarismo">{i + 1}</span>
                       <svg class="visto" viewBox="0 0 24 24" width="28" height="28">
@@ -198,6 +178,29 @@ const jsonLd = JSON.stringify(dadosEstruturados).replace(/</g, '\\u003c');
       <p class="desmarcar" data-desmarcar hidden>
         <button type="button" class="botao-texto" data-recomecar>Desmarcar tudo</button>
       </p>
+
+      <!-- No fim do cartão, para não empurrar a receita para baixo no celular.
+           Precisam de JavaScript: aparecem só quando o script da página roda -->
+      <div class="acoes" data-acoes hidden>
+        <div class="botoes">
+          <button type="button" class="botao cheio entrar" data-entrar aria-describedby="dica-cozinha">
+            <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true">
+              <path d="M4 11h16v2.5a6 6 0 0 1-6 6h-4a6 6 0 0 1-6-6V11ZM2 11h2M20 11h2M9 7.5c0-1 1-1.5 1-2.5M13 7.5c0-1 1-1.5 1-2.5" />
+            </svg>
+            Modo cozinha
+          </button>
+          <button type="button" class="botao guardar" data-guardar aria-pressed="false">
+            <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true">
+              <path d="M6.5 3.5h11v17L12 16.25 6.5 20.5v-17Z" />
+            </svg>
+            <span data-guardar-rotulo>Guardar receita</span>
+          </button>
+        </div>
+        <p class="dica-acoes" id="dica-cozinha">
+          Para riscar ingredientes e passos com um toque, com a tela sempre acesa e letra grande.
+        </p>
+        <p class="aviso-guardar" data-aviso-guardar role="status"></p>
+      </div>
 
       <!-- Barra do modo cozinha: fica presa embaixo da tela, ao alcance do polegar -->
       <div class="barra-cozinha" data-barra role="region" aria-label="Controles do modo cozinha" hidden>
@@ -289,7 +292,9 @@ const jsonLd = JSON.stringify(dadosEstruturados).replace(/</g, '\\u003c');
     display: grid;
     justify-items: center;
     gap: 0.6rem;
-    margin-top: clamp(1.5rem, 4vw, 2rem);
+    margin-top: clamp(2.5rem, 6vw, 3.5rem);
+    padding-top: clamp(1.75rem, 5vw, 2.5rem);
+    border-top: 1px solid var(--cor-borda);
     text-align: center;
   }
 
@@ -389,13 +394,18 @@ const jsonLd = JSON.stringify(dadosEstruturados).replace(/</g, '\\u003c');
     color: var(--cor-texto-3);
   }
 
-  .contagem[hidden] {
+  .contagem[hidden],
+  .receita:not([data-modo-cozinha]) .contagem {
     display: none;
   }
 
-  /* Itens que dá para riscar com um toque */
+  /* Fora do modo cozinha a receita é só para ler: sem caixinhas, sem riscado.
+     Marcar ingredientes e passos é coisa da bancada (modo cozinha). */
   .marcavel {
     display: grid;
+  }
+
+  .receita[data-modo-cozinha] .marcavel {
     cursor: pointer;
     -webkit-tap-highlight-color: transparent;
   }
@@ -404,7 +414,7 @@ const jsonLd = JSON.stringify(dadosEstruturados).replace(/</g, '\\u003c');
     transition: color 0.2s ease, opacity 0.2s ease;
   }
 
-  .feito .marcavel .texto {
+  .receita[data-modo-cozinha] .feito .marcavel .texto {
     color: var(--cor-texto-3);
     text-decoration: line-through;
     text-decoration-color: var(--cor-rotulo);
@@ -413,25 +423,49 @@ const jsonLd = JSON.stringify(dadosEstruturados).replace(/</g, '\\u003c');
 
   /* ---------- Ingredientes ---------- */
 
+  /* Leitura: lista com marcadores, como sempre foi */
   .lista-ingredientes {
     margin: 0;
-    padding: 0;
-    list-style: none;
+    padding-left: 1.1rem;
+  }
+
+  .lista-ingredientes li::marker {
+    color: var(--cor-destaque);
   }
 
   .lista-ingredientes li + li {
-    margin-top: 0.15rem;
+    margin-top: 0.4rem;
   }
 
   .lista-ingredientes .marcavel {
+    display: block;
+  }
+
+  /* Modo cozinha: cada ingrediente ganha a sua caixinha */
+  .receita[data-modo-cozinha] .lista-ingredientes {
+    padding-left: 0;
+    list-style: none;
+  }
+
+  .receita[data-modo-cozinha] .lista-ingredientes li + li {
+    margin-top: 0;
+  }
+
+  .receita[data-modo-cozinha] .lista-ingredientes .marcavel {
+    display: grid;
     grid-template-columns: 1.2rem 1fr;
     align-items: baseline;
     column-gap: 0.75rem;
     padding-block: 0.3rem;
   }
 
-  /* Caixinha desenhada no traço da casa */
+  /* Caixinha desenhada no traço da casa (só no modo cozinha) */
   .caixa {
+    display: none;
+  }
+
+  .receita[data-modo-cozinha] .caixa {
+    display: block;
     appearance: none;
     position: relative;
     top: 0.18em;
@@ -491,7 +525,7 @@ const jsonLd = JSON.stringify(dadosEstruturados).replace(/</g, '\\u003c');
   }
 
   .passos li + li {
-    margin-top: 0.6rem;
+    margin-top: 1rem;
   }
 
   .passos .marcavel {
@@ -526,11 +560,11 @@ const jsonLd = JSON.stringify(dadosEstruturados).replace(/</g, '\\u003c');
     transition: opacity 0.2s ease, transform 0.2s ease;
   }
 
-  .feito .numero .algarismo {
+  .receita[data-modo-cozinha] .feito .numero .algarismo {
     opacity: 0;
   }
 
-  .feito .numero .visto {
+  .receita[data-modo-cozinha] .feito .numero .visto {
     opacity: 1;
     transform: scale(1);
   }
@@ -812,7 +846,6 @@ const jsonLd = JSON.stringify(dadosEstruturados).replace(/</g, '\\u003c');
   .receita[data-modo-cozinha] .acoes,
   .receita[data-modo-cozinha] .foto,
   .receita[data-modo-cozinha] .vizinhas,
-  .receita[data-modo-cozinha] .desmarcar,
   .receita[data-modo-cozinha] .no-olho {
     display: none;
   }
@@ -1176,11 +1209,15 @@ const jsonLd = JSON.stringify(dadosEstruturados).replace(/</g, '\\u003c');
     const ingredientesFeitos = new Set(estado.ingredientes);
     const passosFeitos = new Set(estado.passos);
 
+    // Só dá para marcar no modo cozinha; fora dele as marcações ficam guardadas, mas não aparecem.
+    const marcavel = noModo();
     caixasIngrediente.forEach((caixa, i) => {
+      caixa.disabled = !marcavel;
       caixa.checked = ingredientesFeitos.has(i);
       itensIngrediente[i].classList.toggle('feito', caixa.checked);
     });
     caixasPasso.forEach((caixa, i) => {
+      caixa.disabled = !marcavel;
       caixa.checked = passosFeitos.has(i);
       itensPasso[i].classList.toggle('feito', caixa.checked);
       itensPasso[i].classList.toggle('atual', i === estado.atual);
@@ -1189,14 +1226,14 @@ const jsonLd = JSON.stringify(dadosEstruturados).replace(/</g, '\\u003c');
     const nIngredientes = `${estado.ingredientes.length} de ${totais.ingredientes} separados`;
     contagensIngredientes.forEach((el) => {
       el.textContent = nIngredientes;
-      el.hidden = false;
+      el.hidden = !marcavel;
     });
     contagemPassos.textContent = `${estado.passos.length} de ${totais.passos} feitos`;
-    contagemPassos.hidden = false;
+    contagemPassos.hidden = !marcavel;
     barraProgresso.style.width = `${(estado.passos.length / Math.max(totais.passos, 1)) * 100}%`;
 
     const algoMarcado = estado.ingredientes.length + estado.passos.length > 0;
-    desmarcar.hidden = !algoMarcado;
+    desmarcar.hidden = !marcavel || !algoMarcado;
 
     // Passo a passo
     const atualFeito = passosFeitos.has(estado.atual);
@@ -1213,7 +1250,7 @@ const jsonLd = JSON.stringify(dadosEstruturados).replace(/</g, '\\u003c');
         : 'Feito, terminei!';
 
     receita.toggleAttribute('data-terminou', terminou && todosFeitos());
-    pronto.hidden = !todosFeitos() || (noPassoAPasso() && !terminou);
+    pronto.hidden = !marcavel || !todosFeitos() || (noPassoAPasso() && !terminou);
 
     secaoIngredientes.toggleAttribute('data-fechado', !ingredientesAbertos);
     abrirIngredientes.setAttribute('aria-expanded', String(ingredientesAbertos));
